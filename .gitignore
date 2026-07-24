@@ -39,3 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Dependências
+node_modules/
+
+# Next
+.next/
+
+# Variáveis
+.env
+.env.local
+
+# Fotos do evento (não versionar)
+public/images/events/
+
+# Se no futuro subir originais aqui também
+public/uploads/

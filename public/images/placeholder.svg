@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" fill="none">
+  <rect width="800" height="600" fill="#14161A"/>
+  <rect x="40" y="40" width="720" height="520" rx="4" stroke="#2E3238" stroke-width="2"/>
+  <path d="M320 420L400 280L480 360L560 240L720 420H80L320 420Z" fill="#232730"/>
+  <circle cx="280" cy="200" r="40" fill="#232730"/>
+  <text x="400" y="520" text-anchor="middle" fill="#B3B3B3" font-family="system-ui, sans-serif" font-size="20">M&amp;M Fotografias</text>
+</svg>
