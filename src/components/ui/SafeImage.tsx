@@ -11,23 +11,35 @@ type SafeImageProps = ImageProps & {
 export function SafeImage({
   src,
   fallbackSrc = IMAGE_PATHS.placeholder,
-  alt,
+  alt = "",
   ...props
 }: SafeImageProps) {
-  const initialSrc = typeof src === "string" ? src : fallbackSrc;
-  const [imgSrc, setImgSrc] = useState(initialSrc);
+  const getValidSrc = () => {
+    if (typeof src === "string" && src.trim() !== "") {
+      return src;
+    }
+
+    return fallbackSrc;
+  };
+
+  const [imgSrc, setImgSrc] = useState(getValidSrc());
 
   useEffect(() => {
-    setImgSrc(typeof src === "string" ? src : fallbackSrc);
+    setImgSrc(getValidSrc());
   }, [src, fallbackSrc]);
+
+  if (!imgSrc) {
+    return null;
+  }
 
   return (
     <Image
       {...props}
       src={imgSrc}
       alt={alt}
+      unoptimized
       onError={() => {
-        if (imgSrc !== fallbackSrc) {
+        if (imgSrc !== fallbackSrc && fallbackSrc) {
           setImgSrc(fallbackSrc);
         }
       }}

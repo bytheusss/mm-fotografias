@@ -1,37 +1,172 @@
-import {
-  AACRC_EVENT,
-  AACRC_PHOTOS,
-  AACRC_SLUG,
-} from "@/lib/events/aacrc-05072026";
+import { cache } from "react";
+import { createClient } from "@/lib/supabase/server";
 import type { Event, EventPhoto } from "@/types";
 
-const EVENTS: Event[] = [AACRC_EVENT];
 
-const PHOTOS_BY_SLUG: Record<string, EventPhoto[]> = {
-  [AACRC_SLUG]: AACRC_PHOTOS,
+export const getAllEvents = (): Event[] => {
+  return [
+    {
+      id: "aacrc-05072026",
+      slug: "aacrc-05072026",
+      name: "Encontro AACRC",
+      city: "Rio Claro/SP",
+      date: "05/07/2026",
+      photoCount: 157,
+      image: "/images/banner/hero.jpg",
+    },
+  ];
 };
 
-export function getAllEvents(): Event[] {
-  return EVENTS;
-}
 
-export function getEventBySlug(slug: string): Event | undefined {
-  return EVENTS.find((event) => event.slug === slug);
-}
 
-export function getEventPhotos(slug: string): EventPhoto[] {
-  return PHOTOS_BY_SLUG[slug] ?? [];
-}
+export const getEventBySlug = (
+  slug: string
+): Event | undefined => {
 
-export function getEventPhoto(
-  slug: string,
-  numero: string
-): EventPhoto | undefined {
-  return getEventPhotos(slug).find((photo) => photo.numero === numero);
-}
+  return getAllEvents().find(
+    event => event.slug === slug
+  );
 
-export function getFeaturedPhotos(limit = 6): EventPhoto[] {
-  return AACRC_PHOTOS.slice(0, limit);
-}
+};
 
-export { AACRC_EVENT, AACRC_PHOTOS, AACRC_SLUG };
+
+
+export const getEventPhotos = cache(
+  async (
+    slug: string
+  ): Promise<EventPhoto[]> => {
+
+    const supabase = createClient();
+
+
+    const { data: files, error } =
+      await supabase.storage
+        .from("thumbnails")
+        .list(slug, {
+          limit: 1000,
+          sortBy: {
+            column: "name",
+            order: "asc",
+          },
+        });
+
+
+
+    if (error) {
+      console.error(
+        "Erro Supabase:",
+        error
+      );
+
+      return [];
+    }
+
+
+
+    if (!files) {
+      return [];
+    }
+
+
+
+    return files
+      .filter(
+        file =>
+          file.name.endsWith(".jpg")
+      )
+      .map(
+        file => {
+
+          const numero =
+            file.name.replace(".jpg", "");
+
+
+
+          const imagem =
+            supabase.storage
+              .from("thumbnails")
+              .getPublicUrl(
+                `${slug}/${file.name}`
+              )
+              .data.publicUrl;
+
+
+
+          return {
+
+            id:
+              `${slug}-${numero}`,
+
+            numero,
+
+            evento:
+              "Encontro AACRC",
+
+            slug,
+
+            imagem,
+
+            thumbnail:
+              imagem,
+
+            preco:
+              15,
+
+            status:
+              "available",
+
+          } as EventPhoto;
+
+        }
+      );
+
+
+  }
+);
+
+
+
+
+export const getEventPhoto = cache(
+  async(
+    slug:string,
+    numero:string
+  ):Promise<EventPhoto | undefined>=>{
+
+
+    const photos =
+      await getEventPhotos(slug);
+
+
+
+    return photos.find(
+      photo =>
+        photo.numero === numero
+    );
+
+
+  }
+);
+
+
+
+
+
+export async function getFeaturedPhotos(
+  limit = 6
+):Promise<EventPhoto[]>{
+
+
+  const photos =
+    await getEventPhotos(
+      "aacrc-05072026"
+    );
+
+
+
+  return photos.slice(
+    0,
+    limit
+  );
+
+}

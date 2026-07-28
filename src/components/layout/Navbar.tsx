@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+
 import { NAV_LINKS } from "@/lib/constants/navigation";
-import { SITE } from "@/lib/constants/site";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
+import { SITE } from "@/lib/constants/site";
+import { useCart } from "@/context/CartContext";
+
 
 function CartIcon() {
   return (
@@ -28,6 +32,7 @@ function CartIcon() {
   );
 }
 
+
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg
@@ -40,7 +45,11 @@ function MenuIcon({ open }: { open: boolean }) {
       aria-hidden="true"
     >
       {open ? (
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M6 18 18 6M6 6l12 12"
+        />
       ) : (
         <path
           strokeLinecap="round"
@@ -52,23 +61,55 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
+
+
 export function Navbar() {
+
+  const { items } = useCart();
+
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    handleScroll();
+
+    window.addEventListener(
+      "scroll",
+      handleScroll,
+      { passive: true }
+    );
+
+    return () =>
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+
+  }, []);
+
+
+
+
+  useEffect(() => {
+
+    document.body.style.overflow =
+      mobileOpen ? "hidden" : "";
+
     return () => {
       document.body.style.overflow = "";
     };
+
   }, [mobileOpen]);
+
+
+
 
   return (
     <header
@@ -76,87 +117,218 @@ export function Navbar() {
         "fixed inset-x-0 top-0 z-50 transition-all duration-500",
         scrolled
           ? "border-b border-border/50 bg-background/80 backdrop-blur-md"
-          : "bg-transparent"
+          : "bg-background/60 backdrop-blur-sm"
       )}
     >
-      <Container as="nav" className="flex h-16 items-center justify-between lg:h-20">
+
+      <Container
+        as="nav"
+        className="flex h-20 items-center justify-between lg:h-24"
+      >
+
+
         <Link
           href="/"
-          className="text-lg font-semibold tracking-tight text-foreground transition-opacity duration-300 hover:opacity-80 lg:text-xl"
+          className="flex items-center transition-opacity hover:opacity-80"
         >
-          {SITE.name}
+
+          <Image
+            src="/images/logo.png"
+            alt={SITE.name}
+            width={180}
+            height={60}
+            className="h-10 w-auto object-contain lg:h-12"
+            priority
+          />
+
         </Link>
 
+
+
+
         <ul className="hidden items-center gap-8 lg:flex">
+
           {NAV_LINKS.map((link) => (
+
             <li key={link.href}>
+
               <Link
                 href={link.href}
-                className="text-sm text-muted transition-colors duration-300 hover:text-foreground"
+                className="text-sm text-muted transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>
+
             </li>
+
           ))}
+
         </ul>
 
+
+
+
         <div className="hidden items-center gap-3 lg:flex">
-          <Button href="/login" variant="ghost" size="sm">
+
+
+          <Button
+            href="/login"
+            variant="ghost"
+            size="sm"
+          >
             Login
           </Button>
-          <Button href="/cadastro" variant="outline" size="sm">
+
+
+
+          <Button
+            href="/cadastro"
+            variant="outline"
+            size="sm"
+          >
             Cadastrar
           </Button>
+
+
+
+
           <Button
             href="/carrinho"
             variant="secondary"
             size="sm"
-            className="!px-3"
+            className="relative !px-3"
             aria-label="Carrinho"
           >
+
             <CartIcon />
+
+
+            {items.length > 0 && (
+
+              <span
+                className="
+                absolute -right-2 -top-2
+                flex size-5 items-center justify-center
+                rounded-full
+                bg-red-600
+                text-xs font-bold text-white
+                "
+              >
+                {items.length}
+              </span>
+
+            )}
+
+
           </Button>
+
+
         </div>
+
+
+
+
 
         <button
           type="button"
-          className="flex size-10 items-center justify-center rounded-sm text-foreground transition-colors duration-300 hover:bg-card lg:hidden"
-          onClick={() => setMobileOpen((prev) => !prev)}
-          aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-          aria-expanded={mobileOpen}
+          className="flex size-10 items-center justify-center rounded-sm text-foreground hover:bg-card lg:hidden"
+          onClick={() => setMobileOpen(!mobileOpen)}
         >
+
           <MenuIcon open={mobileOpen} />
+
         </button>
+
+
       </Container>
 
+
+
+
+
       {mobileOpen && (
-        <div className="animate-slide-down border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
+
+        <div className="border-t border-border bg-background/95 backdrop-blur-md lg:hidden">
+
+
           <Container className="flex flex-col gap-1 py-4">
+
+
             {NAV_LINKS.map((link) => (
+
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-sm px-3 py-3 text-sm text-muted transition-colors duration-300 hover:bg-card hover:text-foreground"
                 onClick={() => setMobileOpen(false)}
+                className="rounded-sm px-3 py-3 text-sm text-muted hover:bg-card"
               >
+
                 {link.label}
+
               </Link>
+
             ))}
+
+
+
+
+
             <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
-              <Button href="/login" variant="ghost" size="md">
+
+
+              <Button href="/login" variant="ghost">
                 Login
               </Button>
-              <Button href="/cadastro" variant="outline" size="md">
+
+
+              <Button href="/cadastro" variant="outline">
                 Cadastrar
               </Button>
-              <Button href="/carrinho" variant="secondary" size="md">
+
+
+
+              <Button
+                href="/carrinho"
+                variant="secondary"
+                className="relative"
+              >
+
                 <CartIcon />
+
                 Carrinho
+
+
+                {items.length > 0 && (
+
+                  <span
+                    className="
+                    absolute right-3 top-2
+                    flex size-5 items-center justify-center
+                    rounded-full
+                    bg-red-600
+                    text-xs font-bold text-white
+                    "
+                  >
+                    {items.length}
+                  </span>
+
+                )}
+
+
               </Button>
+
+
             </div>
+
+
           </Container>
+
+
         </div>
+
       )}
+
+
     </header>
   );
 }
