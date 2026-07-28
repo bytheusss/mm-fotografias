@@ -45,10 +45,32 @@ export async function POST(
     const paymentApi = new Payment(client);
 
 
-    const payment =
-      await paymentApi.get({
+    let payment;
+
+
+    try {
+
+      payment = await paymentApi.get({
         id: paymentId,
       });
+
+
+    } catch (err) {
+
+
+      console.error(
+        "ERRO BUSCANDO PAGAMENTO MP:",
+        err
+      );
+
+
+      return NextResponse.json({
+        received: true,
+        message: "Pagamento não encontrado",
+      });
+
+
+    }
 
 
 
@@ -58,7 +80,10 @@ export async function POST(
     );
 
 
-    if (payment.status === "approved") {
+
+    if (
+      payment.status === "approved"
+    ) {
 
 
       const { error } =
@@ -71,6 +96,7 @@ export async function POST(
             "mercado_pago_payment_id",
             payment.id
           );
+
 
 
       if (error) {
@@ -102,6 +128,7 @@ export async function POST(
     );
 
 
+
     return NextResponse.json(
       {
         error: error.message,
@@ -110,6 +137,7 @@ export async function POST(
         status: 500,
       }
     );
+
 
   }
 
