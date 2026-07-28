@@ -12,7 +12,8 @@ export const getAllEvents = (): Event[] => {
       city: "Rio Claro/SP",
       date: "05/07/2026",
       photoCount: 157,
-      image: "/images/banner/hero.jpg",
+      image:
+        "https://azgbacvirqxppqjbepjq.supabase.co/storage/v1/object/public/thumbnails/aacrc-05072026/0001.jpg",
     },
   ];
 };
@@ -31,51 +32,91 @@ export const getEventBySlug = (
 
 
 
+
 export const getEventPhotos = cache(
   async (
     slug: string
   ): Promise<EventPhoto[]> => {
 
+
     const supabase = createClient();
 
 
-    const { data: files, error } =
-      await supabase.storage
-        .from("thumbnails")
-        .list(slug, {
-          limit: 1000,
-          sortBy: {
-            column: "name",
-            order: "asc",
-          },
-        });
+
+    console.log(
+      "SUPABASE URL:",
+      process.env.NEXT_PUBLIC_SUPABASE_URL
+    );
+
+
+    console.log(
+      "SUPABASE KEY:",
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10)
+    );
+
+
+
+    const {
+      data: files,
+      error
+    } = await supabase.storage
+      .from("thumbnails")
+      .list(slug, {
+        limit: 1000,
+        sortBy: {
+          column: "name",
+          order: "asc",
+        },
+      });
+
+
+
+    console.log(
+      "SUPABASE FILES:",
+      files
+    );
 
 
 
     if (error) {
+
       console.error(
-        "Erro Supabase:",
+        "ERRO SUPABASE STORAGE:",
         error
       );
 
       return [];
+
     }
 
 
 
-    if (!files) {
+    if (!files || files.length === 0) {
+
+      console.log(
+        "NENHUMA FOTO ENCONTRADA:",
+        slug
+      );
+
       return [];
+
     }
+
+
 
 
 
     return files
+
       .filter(
         file =>
-          file.name.endsWith(".jpg")
+          file.name.toLowerCase().endsWith(".jpg")
       )
+
+
       .map(
         file => {
+
 
           const numero =
             file.name.replace(".jpg", "");
@@ -88,7 +129,9 @@ export const getEventPhotos = cache(
               .getPublicUrl(
                 `${slug}/${file.name}`
               )
-              .data.publicUrl;
+              .data
+              .publicUrl;
+
 
 
 
@@ -97,25 +140,34 @@ export const getEventPhotos = cache(
             id:
               `${slug}-${numero}`,
 
+
             numero,
+
 
             evento:
               "Encontro AACRC",
 
+
             slug,
 
+
             imagem,
+
 
             thumbnail:
               imagem,
 
+
             preco:
               15,
+
 
             status:
               "available",
 
+
           } as EventPhoto;
+
 
         }
       );
@@ -127,11 +179,13 @@ export const getEventPhotos = cache(
 
 
 
+
+
 export const getEventPhoto = cache(
-  async(
-    slug:string,
-    numero:string
-  ):Promise<EventPhoto | undefined>=>{
+  async (
+    slug: string,
+    numero: string
+  ): Promise<EventPhoto | undefined> => {
 
 
     const photos =
@@ -152,9 +206,10 @@ export const getEventPhoto = cache(
 
 
 
+
 export async function getFeaturedPhotos(
   limit = 6
-):Promise<EventPhoto[]>{
+): Promise<EventPhoto[]> {
 
 
   const photos =
