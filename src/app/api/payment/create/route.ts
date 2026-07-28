@@ -8,22 +8,16 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 
-
 const client = new MercadoPagoConfig({
-
   accessToken:
     process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-
 });
-
-
 
 
 
 export async function POST(
   request: Request
 ) {
-
 
   try {
 
@@ -44,39 +38,75 @@ export async function POST(
 
 
 
-
-
-    if (
+    if(
       !email ||
       !items ||
       !total
-
-    ) {
-
+    ){
 
       return NextResponse.json(
-
         {
-          error:
-            "Dados incompletos",
+          error:"Dados incompletos"
         },
-
         {
-          status:400,
+          status:400
         }
-
       );
 
     }
 
 
 
+    // 1 - cria pedido no Supabase
+
+    const {
+      data: orderDB,
+      error: dbError
+
+    } = await supabaseAdmin
+      .from("orders")
+      .insert({
+
+        name,
+
+        email,
+
+        whatsapp,
+
+        photos:
+          items,
+
+        total,
+
+        status:
+          "pending"
+
+      })
+      .select()
+      .single();
+
+
+
+    if(dbError){
+
+      console.error(
+        "SUPABASE ERROR:",
+        dbError
+      );
+
+
+      throw dbError;
+
+    }
+
+
+
+
+    // 2 - cria PIX Mercado Pago
 
 
     const order =
       new Order(client);
-
-
 
 
 
@@ -86,9 +116,7 @@ export async function POST(
         body:{
 
 
-          type:
-            "online",
-
+          type:"online",
 
 
           processing_mode:
@@ -96,73 +124,56 @@ export async function POST(
 
 
 
-
           total_amount:
-            Number(total).toFixed(2),
-
-
+            Number(total)
+              .toFixed(2),
 
 
 
           payer:{
 
-
             email,
 
             first_name:
               name ||
-              "Cliente",
-
+              "Cliente"
 
           },
-
-
 
 
 
           transactions:{
 
+            payments:[
 
-            payments:[{
+              {
 
-
-              amount:
-                Number(total).toFixed(2),
-
-
-
-
-              payment_method:{
+                amount:
+                  Number(total)
+                  .toFixed(2),
 
 
-                id:
-                  "pix",
+                payment_method:{
 
+                  id:"pix",
 
-                type:
-                  "bank_transfer",
+                  type:
+                    "bank_transfer"
 
+                }
 
-              },
+              }
 
-
-            }],
-
+            ]
 
           },
 
 
-
-
-
           external_reference:
-
-            `MM-${Date.now()}-${whatsapp || ""}`,
-
+            orderDB.id
 
 
-        },
-
+        }
 
       });
 
@@ -170,13 +181,35 @@ export async function POST(
 
 
 
-
-
     const payment =
+      response
+      .transactions
+      ?.payments?.[0];
 
-      response.transactions
-        ?.payments?.[0];
 
+
+
+
+    // 3 - atualiza pedido com dados MP
+
+
+    await supabaseAdmin
+      .from("orders")
+      .update({
+
+        mercado_pago_order_id:
+          response.id,
+
+
+        mercado_pago_payment_id:
+          payment?.id
+
+
+      })
+      .eq(
+        "id",
+        orderDB.id
+      );
 
 
 
@@ -184,99 +217,13 @@ export async function POST(
 
 
     console.log(
-
-      "ORDER RESPONSE:",
-
-      JSON.stringify(
-        response,
-        null,
-        2
-      )
-
+      "PEDIDO SALVO:",
+      orderDB.id
     );
 
 
 
-
-
-
-
-    const { error } =
-
-      await supabaseAdmin
-
-        .from("orders")
-
-        .insert({
-
-
-          name,
-
-          email,
-
-          whatsapp,
-
-
-          photos:
-            items,
-
-
-          total:
-
-
-            Number(total),
-
-
-
-
-          mercado_pago_order_id:
-
-            response.id,
-
-
-
-          mercado_pago_payment_id:
-
-            payment?.id,
-
-
-
-          status:
-
-            "pending",
-
-
-
-        });
-
-
-
-
-
-
-    if(error){
-
-
-      console.error(
-
-        "SUPABASE ERROR:",
-
-        error
-
-      );
-
-
-    }
-
-
-
-
-
-
-
-
     return NextResponse.json({
-
 
       success:true,
 
@@ -285,19 +232,11 @@ export async function POST(
         response.id,
 
 
-
-      status:
-        response.status,
-
-
-
       payment_id:
         payment?.id,
 
 
-
-      payment,
-
+      payment
 
 
     });
@@ -305,54 +244,31 @@ export async function POST(
 
 
 
-
-
-
   } catch(error:any){
 
 
-
     console.error(
-
-      "Mercado Pago Error:",
-
-      JSON.stringify(
-        error,
-        null,
-        2
-      )
-
+      "PAYMENT ERROR:",
+      error
     );
-
 
 
 
     return NextResponse.json(
 
-
       {
-
         error:
-
           error.message ||
-
           "Erro ao criar pagamento"
-
-
       },
 
-
       {
-
-        status:500,
-
+        status:500
       }
-
 
     );
 
 
   }
-
 
 }
