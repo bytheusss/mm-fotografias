@@ -14,27 +14,34 @@ const client = new MercadoPagoConfig({
 });
 
 
+
 export async function POST(
   request: Request
 ) {
 
   try {
 
+
     const body =
       await request.json();
 
 
+
     console.log(
-      "WEBHOOK:",
-      JSON.stringify(body,null,2)
+      "WEBHOOK MERCADO PAGO:",
+      JSON.stringify(body, null, 2)
     );
 
 
-    let paymentId =
-      null;
+
+    let paymentId = null;
 
 
-    if(body.type === "payment") {
+
+    // Evento payment
+    if(
+      body.type === "payment"
+    ){
 
       paymentId =
         body.data?.id;
@@ -42,6 +49,8 @@ export async function POST(
     }
 
 
+
+    // Evento order (PIX novo)
     if(
       body.type === "order"
     ){
@@ -55,7 +64,12 @@ export async function POST(
     }
 
 
+
     if(!paymentId){
+
+      console.log(
+        "SEM PAYMENT ID"
+      );
 
       return NextResponse.json({
         received:true
@@ -64,21 +78,34 @@ export async function POST(
     }
 
 
+
+
     const paymentApi =
       new Payment(client);
 
 
+
     const payment =
       await paymentApi.get({
+
         id:String(paymentId)
+
       });
 
 
 
     console.log(
-      "PAYMENT STATUS:",
+      "PAYMENT ID:",
+      payment.id
+    );
+
+
+    console.log(
+      "STATUS:",
       payment.status
     );
+
+
 
 
     if(
@@ -93,6 +120,7 @@ export async function POST(
 
 
 
+
     const externalReference =
       payment.external_reference;
 
@@ -104,6 +132,7 @@ export async function POST(
         "SEM EXTERNAL REFERENCE"
       );
 
+
       return NextResponse.json({
         received:true
       });
@@ -112,8 +141,40 @@ export async function POST(
 
 
 
-    const token =
-      crypto.randomUUID();
+
+    // verifica se já tem token
+
+    const {
+      data: order
+    } =
+      await supabaseAdmin
+      .from("orders")
+      .select(
+        "download_token"
+      )
+      .eq(
+        "id",
+        externalReference
+      )
+      .single();
+
+
+
+
+    let token =
+      order?.download_token;
+
+
+
+    if(!token){
+
+      token =
+        crypto.randomUUID();
+
+
+    }
+
+
 
 
 
@@ -135,14 +196,18 @@ export async function POST(
 
 
 
+
+
     if(error){
 
       console.error(
-        "UPDATE ERROR:",
+        "UPDATE SUPABASE ERROR:",
         error
       );
 
+
     }
+
 
 
 
@@ -153,19 +218,24 @@ export async function POST(
 
 
     console.log(
-      "TOKEN:",
+      "TOKEN DOWNLOAD:",
       token
     );
 
 
 
+
+
     return NextResponse.json({
+
       success:true
+
     });
 
 
 
-  } catch(error){
+  } catch(error:any){
+
 
     console.error(
       "WEBHOOK ERROR:",
@@ -173,9 +243,13 @@ export async function POST(
     );
 
 
+    // MP precisa receber 200
     return NextResponse.json({
+
       received:true
+
     });
+
 
   }
 
