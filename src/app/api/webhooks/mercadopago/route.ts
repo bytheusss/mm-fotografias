@@ -8,59 +8,51 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 
-
 const client = new MercadoPagoConfig({
-
   accessToken:
-    process.env.MERCADO_PAGO_ACCESS_TOKEN!
-
+    process.env.MERCADO_PAGO_ACCESS_TOKEN!,
 });
-
-
-
 
 
 export async function POST(
   request: Request
 ) {
 
-
   try {
-
 
     const body =
       await request.json();
 
 
-
     console.log(
-      "WEBHOOK MERCADO PAGO:",
-      JSON.stringify(
-        body,
-        null,
-        2
-      )
+      "WEBHOOK:",
+      JSON.stringify(body,null,2)
     );
 
 
+    let paymentId =
+      null;
 
 
-    if(
-      body.type !== "payment"
-    ){
+    if(body.type === "payment") {
 
-      return NextResponse.json({
-        received:true
-      });
+      paymentId =
+        body.data?.id;
 
     }
 
 
+    if(
+      body.type === "order"
+    ){
 
+      paymentId =
+        body.data
+        ?.transactions
+        ?.payments?.[0]
+        ?.id;
 
-    const paymentId =
-      body.data?.id;
-
+    }
 
 
     if(!paymentId){
@@ -72,94 +64,108 @@ export async function POST(
     }
 
 
-
-
     const paymentApi =
       new Payment(client);
 
 
-
-
     const payment =
       await paymentApi.get({
-
-        id:
-          paymentId
-
+        id:String(paymentId)
       });
 
 
 
-
-
     console.log(
-      "STATUS PAGAMENTO:",
+      "PAYMENT STATUS:",
       payment.status
     );
 
 
-
-
-
-
     if(
-      payment.status === "approved"
+      payment.status !== "approved"
     ){
 
-
-      const { error } =
-        await supabaseAdmin
-        .from("orders")
-        .update({
-
-          status:
-            "paid"
-
-        })
-        .eq(
-
-          "mercado_pago_payment_id",
-
-          String(payment.id)
-
-        );
-
-
-
-      if(error){
-
-        console.error(
-          "SUPABASE UPDATE ERROR:",
-          error
-        );
-
-      }
-
-
-
-      console.log(
-        "PEDIDO PAGO!"
-      );
-
+      return NextResponse.json({
+        received:true
+      });
 
     }
 
 
 
+    const externalReference =
+      payment.external_reference;
+
+
+
+    if(!externalReference){
+
+      console.error(
+        "SEM EXTERNAL REFERENCE"
+      );
+
+      return NextResponse.json({
+        received:true
+      });
+
+    }
+
+
+
+    const token =
+      crypto.randomUUID();
+
+
+
+    const { error } =
+      await supabaseAdmin
+      .from("orders")
+      .update({
+
+        status:"paid",
+
+        download_token:
+          token
+
+      })
+      .eq(
+        "id",
+        externalReference
+      );
+
+
+
+    if(error){
+
+      console.error(
+        "UPDATE ERROR:",
+        error
+      );
+
+    }
+
+
+
+    console.log(
+      "PEDIDO LIBERADO:",
+      externalReference
+    );
+
+
+    console.log(
+      "TOKEN:",
+      token
+    );
+
 
 
     return NextResponse.json({
-
       success:true
-
     });
 
 
 
-
-
-  } catch(error:any){
-
+  } catch(error){
 
     console.error(
       "WEBHOOK ERROR:",
@@ -167,16 +173,10 @@ export async function POST(
     );
 
 
-    // sempre responde 200 pro MP
-
     return NextResponse.json({
-
       received:true
-
     });
 
-
   }
-
 
 }
