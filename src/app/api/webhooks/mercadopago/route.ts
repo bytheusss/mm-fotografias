@@ -1,156 +1,81 @@
 import { NextResponse } from "next/server";
-
-import {
-  MercadoPagoConfig,
-  Payment,
-} from "mercadopago";
-
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-
-const client = new MercadoPagoConfig({
-  accessToken:
-    process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-});
-
-
-export async function POST(
-  request: Request
-) {
-
+export async function POST(request: Request) {
   try {
-
     const body = await request.json();
-
 
     console.log(
       "WEBHOOK MERCADO PAGO:",
       JSON.stringify(body, null, 2)
     );
 
-
-    // ignora eventos que não são pagamento
-    if (
-      body.type !== "payment"
-    ) {
-
-      return NextResponse.json({
-        received: true,
-      });
-
+    // Aceita apenas eventos de Order
+    if (body.type !== "order") {
+      return NextResponse.json({ received: true });
     }
 
+    const order = body.data;
 
-    const paymentId =
-      body?.data?.id;
+    const externalReference = order.external_reference;
+    const status = order.status;
+    const orderId = order.id;
 
+    console.log("ORDER:", orderId);
+    console.log("STATUS:", status);
+    console.log("EXTERNAL_REFERENCE:", externalReference);
 
-    if (!paymentId) {
-
-      return NextResponse.json({
-        received: true,
-      });
-
+    if (!externalReference) {
+      console.log("Order sem external_reference.");
+      return NextResponse.json({ received: true });
     }
 
+    switch (status) {
+      case "action_required":
+        console.log("PIX aguardando pagamento.");
+        break;
 
-    const paymentApi =
-      new Payment(client);
-
-      console.log(
-        "BUSCANDO PAGAMENTO:",
-        paymentId
-      );
-      
-      console.log(
-        "TOKEN MP:",
-        process.env.MERCADO_PAGO_ACCESS_TOKEN?.slice(0,15)
-      );
-    const payment =
-      await paymentApi.get({
-        id: paymentId,
-      });
-
-
-    console.log(
-      "PAGAMENTO ENCONTRADO:",
-      payment.id
-    );
-
-
-    console.log(
-      "STATUS:",
-      payment.status
-    );
-
-
-    if (
-      payment.status === "approved"
-    ) {
-
-
-      const { error } =
+      case "processed":
         await supabaseAdmin
           .from("orders")
           .update({
-
             status: "paid",
-
           })
-          .eq(
+          .eq("id", externalReference);
 
-            "mercado_pago_payment_id",
-            String(payment.id)
+        console.log("Pedido marcado como PAGO.");
+        break;
 
-          );
+      case "cancelled":
+        await supabaseAdmin
+          .from("orders")
+          .update({
+            status: "cancelled",
+          })
+          .eq("id", externalReference);
 
+        console.log("Pedido CANCELADO.");
+        break;
 
-      if(error){
-
-        console.error(
-          "ERRO UPDATE SUPABASE:",
-          error
-        );
-
-      }
-
-
-      console.log(
-        "PEDIDO ATUALIZADO COMO PAGO"
-      );
-
-
+      default:
+        console.log("Status recebido:", status);
     }
 
-
     return NextResponse.json({
-
-      success:true,
-
+      received: true,
     });
 
-
-
-  } catch(error:any){
-
+  } catch (error: any) {
 
     console.error(
       "WEBHOOK ERROR:",
       error
     );
 
-
-    // MP precisa receber 200 para não ficar reenviando infinitamente
-
+    // Sempre responde 200 ao Mercado Pago
     return NextResponse.json({
-
-      received:true,
-
-      error:error.message
-
+      received: true,
+      error: error.message,
     });
-
-
   }
-
 }

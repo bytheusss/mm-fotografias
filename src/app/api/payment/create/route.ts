@@ -54,14 +54,15 @@ export async function POST(request: Request) {
       .single();
 
     if (dbError) {
-      console.error("SUPABASE ERROR:", dbError);
+      console.error("SUPABASE ERROR:");
+      console.dir(dbError, { depth: null });
       throw dbError;
     }
 
     console.log("PEDIDO SALVO:", orderDB.id);
 
     // ===========================
-    // Cria pedido Mercado Pago
+    // Mercado Pago
     // ===========================
 
     const order = new Order(client);
@@ -96,13 +97,14 @@ export async function POST(request: Request) {
       },
     });
 
-    console.log("ORDER RESPONSE:", response);
+    console.log("===== ORDER RESPONSE =====");
+    console.dir(response, { depth: null });
 
     const payment =
       response.transactions?.payments?.[0];
 
     // ===========================
-    // Atualiza pedido
+    // Atualiza Supabase
     // ===========================
 
     const { error: updateError } =
@@ -115,45 +117,47 @@ export async function POST(request: Request) {
         .eq("id", orderDB.id);
 
     if (updateError) {
-      console.error(
-        "ERRO UPDATE SUPABASE:",
-        updateError
-      );
+      console.error("ERRO UPDATE SUPABASE:");
+      console.dir(updateError, { depth: null });
     }
-
-    // ===========================
-    // LOGS
-    // ===========================
-
-    console.log("ORDER ID:", response.id);
-    console.log("PAYMENT ID:", payment?.id);
-    console.log("STATUS:", payment?.status);
-    console.log(
-      "EXTERNAL REFERENCE:",
-      orderDB.id
-    );
 
     return NextResponse.json({
       success: true,
-
       order_id: response.id,
-
       payment_id: payment?.id,
-
       payment,
     });
-  } catch (error: any) {
-    console.error("PAYMENT ERROR:", error);
 
-    if (error?.cause) {
-      console.error("CAUSE:", error.cause);
-    }
+  } catch (error: any) {
+
+    console.error("======================================");
+    console.error("=========== PAYMENT ERROR ============");
+    console.error("======================================");
+
+    console.dir(error, { depth: null });
+
+    console.log("MESSAGE:", error?.message);
+    console.log("STATUS:", error?.status);
+    console.log("NAME:", error?.name);
+
+    console.log("CAUSE:");
+    console.dir(error?.cause, { depth: null });
+
+    console.log("DETAILS:");
+    console.dir(error?.details, { depth: null });
+
+    console.log("ERRORS:");
+    console.dir(error?.errors, { depth: null });
+
+    console.log("DATA:");
+    console.dir(error?.data, { depth: null });
+
+    console.log("RAW:");
+    console.log(JSON.stringify(error, null, 2));
 
     return NextResponse.json(
       {
-        error:
-          error?.message ||
-          "Erro ao criar pagamento",
+        error: error?.message || "Erro ao criar pagamento",
       },
       {
         status: 500,
