@@ -45,7 +45,8 @@ export default function CheckoutPage() {
     items.length * 15;
 
 
-  const total = 1;
+  const total =
+    items.length * pricePerPhoto;
 
 
   const economy =
