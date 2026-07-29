@@ -5,13 +5,19 @@ import { notFound } from "next/navigation";
 export default async function DownloadPage({
   params,
 }: {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }) {
 
 
-  const { token } = params;
+  const { token } = await params;
+
+
+  console.log(
+    "TOKEN RECEBIDO:",
+    token
+  );
 
 
 
@@ -27,10 +33,15 @@ export default async function DownloadPage({
 
 
 
-  if(
+  if (
     error ||
     !order
-  ){
+  ) {
+
+    console.error(
+      "PEDIDO NÃO ENCONTRADO:",
+      error
+    );
 
     notFound();
 
@@ -38,11 +49,13 @@ export default async function DownloadPage({
 
 
 
-  if(
+
+  if (
     order.status !== "paid"
-  ){
+  ) {
 
     return (
+
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
 
         <div className="text-center">
@@ -51,17 +64,22 @@ export default async function DownloadPage({
             Pagamento pendente
           </h1>
 
+
           <p className="mt-3 text-neutral-400">
             Assim que o pagamento for aprovado,
             suas fotos serão liberadas.
           </p>
 
+
         </div>
 
       </main>
+
     );
 
   }
+
+
 
 
 
@@ -69,6 +87,7 @@ export default async function DownloadPage({
     typeof order.photos === "string"
       ? JSON.parse(order.photos)
       : order.photos;
+
 
 
 
@@ -111,6 +130,7 @@ export default async function DownloadPage({
                 />
 
 
+
                 <a
                   href={photo.imagem}
                   target="_blank"
@@ -122,9 +142,11 @@ export default async function DownloadPage({
                 </a>
 
 
+
               </div>
 
             )
+
           )}
 
 
