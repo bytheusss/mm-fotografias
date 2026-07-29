@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
 
 export async function GET(
   request: Request,
@@ -14,15 +12,9 @@ export async function GET(
   }
 ) {
 
-
   const { token } = await params;
 
-
-  console.log(
-    "DOWNLOAD TOKEN:",
-    token
-  );
-
+  console.log("DOWNLOAD TOKEN:", token);
 
 
   const { data: order, error } =
@@ -34,7 +26,6 @@ export async function GET(
         token
       )
       .single();
-
 
 
   if (
@@ -55,7 +46,6 @@ export async function GET(
 
 
 
-
   if (
     order.status !== "paid"
   ) {
@@ -73,8 +63,6 @@ export async function GET(
 
 
 
-
-
   const photos =
     typeof order.photos === "string"
       ? JSON.parse(order.photos)
@@ -82,19 +70,21 @@ export async function GET(
 
 
 
-  const photo =
-    photos[0];
+  const { searchParams } = new URL(request.url);
+
+  const numeroFoto =
+    searchParams.get("photo");
 
 
 
-  if(!photo){
+  if (!numeroFoto) {
 
     return NextResponse.json(
       {
-        error:"Nenhuma foto encontrada"
+        error: "Número da foto não informado"
       },
       {
-        status:404
+        status: 400
       }
     );
 
@@ -102,41 +92,53 @@ export async function GET(
 
 
 
+  const photo =
+    photos.find(
+      (p: any) =>
+        String(p.numero) === String(numeroFoto)
+    );
+
+
+
+  if (!photo) {
+
+    return NextResponse.json(
+      {
+        error: "Foto não encontrada"
+      },
+      {
+        status: 404
+      }
+    );
+
+  }
+
 
 
   /*
-    Aqui pegamos o caminho do arquivo original
+    Caminho esperado:
 
-    Exemplo:
     originals/aacrc-05072026/0002.jpg
 
   */
 
 
   const filePath =
-    photo.imagem
-      .split("/thumbnails/")
-      .pop();
+    `aacrc-05072026/${photo.numero}.jpg`;
 
 
 
-  if(!filePath){
-
-    return NextResponse.json(
-      {
-        error:"Caminho inválido"
-      },
-      {
-        status:400
-      }
-    );
-
-  }
+  console.log(
+    "BUSCANDO ORIGINAL:",
+    filePath
+  );
 
 
 
-
-  const { data: signedUrl, error: urlError } =
+  const {
+    data: signedUrl,
+    error: urlError
+  } =
     await supabaseAdmin
       .storage
       .from("originals")
@@ -147,11 +149,10 @@ export async function GET(
 
 
 
-
-  if(
+  if (
     urlError ||
     !signedUrl?.signedUrl
-  ){
+  ) {
 
     console.error(
       "SIGNED URL ERROR:",
@@ -161,10 +162,11 @@ export async function GET(
 
     return NextResponse.json(
       {
-        error:"Arquivo original não encontrado"
+        error: "Arquivo original não encontrado",
+        path: filePath
       },
       {
-        status:404
+        status: 404
       }
     );
 
@@ -172,10 +174,8 @@ export async function GET(
 
 
 
-
   return NextResponse.redirect(
     signedUrl.signedUrl
   );
-
 
 }
