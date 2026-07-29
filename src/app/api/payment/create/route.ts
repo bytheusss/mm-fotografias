@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
+
 import {
   MercadoPagoConfig,
-  Order,
+  Payment,
 } from "mercadopago";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  accessToken:
+    process.env.MERCADO_PAGO_ACCESS_TOKEN!,
 });
 
-export async function POST(request: Request) {
+
+export async function POST(
+  request: Request
+) {
+
   try {
+
     const body = await request.json();
+
 
     const {
       name,
@@ -20,148 +29,216 @@ export async function POST(request: Request) {
       whatsapp,
       items,
       total,
+
     } = body;
 
-    if (!email || !items || !total) {
+
+    if (
+      !email ||
+      !items ||
+      !total
+    ) {
+
       return NextResponse.json(
         {
-          error: "Dados incompletos",
+          error:"Dados incompletos"
         },
         {
-          status: 400,
+          status:400
         }
       );
+
     }
 
-    // ===========================
-    // Salva pedido no Supabase
-    // ===========================
+
+
+    // SALVA PEDIDO
 
     const {
       data: orderDB,
-      error: dbError,
+      error: dbError
+
     } = await supabaseAdmin
       .from("orders")
       .insert({
+
         name,
+
         email,
+
         whatsapp,
+
         photos: items,
+
         total,
-        status: "pending",
+
+        status:"pending"
+
       })
       .select()
       .single();
 
-    if (dbError) {
-      console.error("SUPABASE ERROR:");
-      console.dir(dbError, { depth: null });
+
+
+    if(dbError){
+
+      console.error(
+        "SUPABASE ERROR:",
+        dbError
+      );
+
       throw dbError;
+
     }
 
-    console.log("PEDIDO SALVO:", orderDB.id);
 
-    // ===========================
-    // Mercado Pago
-    // ===========================
 
-    const order = new Order(client);
+    console.log(
+      "PEDIDO SALVO:",
+      orderDB.id
+    );
 
-    const response = await order.create({
-      body: {
-        type: "online",
 
-        processing_mode: "automatic",
 
-        total_amount: Number(total).toFixed(2),
 
-        payer: {
-          email,
-          first_name: name || "Cliente",
-        },
+    // CRIA PAGAMENTO PIX
 
-        transactions: {
-          payments: [
-            {
-              amount: Number(total).toFixed(2),
+    const paymentApi =
+      new Payment(client);
 
-              payment_method: {
-                id: "pix",
-                type: "bank_transfer",
-              },
-            },
-          ],
-        },
 
-        external_reference: String(orderDB.id),
-      },
-    });
-
-    console.log("===== ORDER RESPONSE =====");
-    console.dir(response, { depth: null });
 
     const payment =
-      response.transactions?.payments?.[0];
+      await paymentApi.create({
 
-    // ===========================
-    // Atualiza Supabase
-    // ===========================
+        body:{
 
-    const { error: updateError } =
-      await supabaseAdmin
-        .from("orders")
-        .update({
-          mercado_pago_order_id: String(response.id),
-          mercado_pago_payment_id: String(payment?.id),
-        })
-        .eq("id", orderDB.id);
+          transaction_amount:
+            Number(total),
 
-    if (updateError) {
-      console.error("ERRO UPDATE SUPABASE:");
-      console.dir(updateError, { depth: null });
-    }
+
+          description:
+            "Compra de fotos M&M Fotografias",
+
+
+          payment_method_id:
+            "pix",
+
+
+          payer:{
+
+            email,
+
+            first_name:
+              name || "Cliente"
+
+          },
+
+
+          external_reference:
+            String(orderDB.id)
+
+        }
+
+      });
+
+
+
+
+
+    console.log(
+      "PAYMENT RESPONSE:",
+      payment
+    );
+
+
+
+
+
+    // SALVA DADOS MP
+
+
+    await supabaseAdmin
+      .from("orders")
+      .update({
+
+        mercado_pago_payment_id:
+          String(payment.id),
+
+        status:
+          payment.status || "pending"
+
+      })
+      .eq(
+        "id",
+        orderDB.id
+      );
+
+
+
+
 
     return NextResponse.json({
-      success: true,
-      order_id: response.id,
-      payment_id: payment?.id,
-      payment,
+
+      success:true,
+
+      payment_id:
+        payment.id,
+
+
+      status:
+        payment.status,
+
+
+      qr_code:
+        payment.point_of_interaction
+        ?.transaction_data
+        ?.qr_code,
+
+
+      qr_code_base64:
+        payment.point_of_interaction
+        ?.transaction_data
+        ?.qr_code_base64
+
+
     });
 
-  } catch (error: any) {
 
-    console.error("======================================");
-    console.error("=========== PAYMENT ERROR ============");
-    console.error("======================================");
 
-    console.dir(error, { depth: null });
+  } catch(error:any){
 
-    console.log("MESSAGE:", error?.message);
-    console.log("STATUS:", error?.status);
-    console.log("NAME:", error?.name);
 
-    console.log("CAUSE:");
-    console.dir(error?.cause, { depth: null });
+    console.error(
+      "PAYMENT ERROR:"
+    );
 
-    console.log("DETAILS:");
-    console.dir(error?.details, { depth: null });
 
-    console.log("ERRORS:");
-    console.dir(error?.errors, { depth: null });
-
-    console.log("DATA:");
-    console.dir(error?.data, { depth: null });
-
-    console.log("RAW:");
-    console.log(JSON.stringify(error, null, 2));
-
-    return NextResponse.json(
+    console.dir(
+      error,
       {
-        error: error?.message || "Erro ao criar pagamento",
-      },
-      {
-        status: 500,
+        depth:null
       }
     );
+
+
+
+    return NextResponse.json(
+
+      {
+        error:
+          error.message ||
+          "Erro ao criar pagamento"
+      },
+
+      {
+        status:500
+      }
+
+    );
+
+
   }
+
+
 }
