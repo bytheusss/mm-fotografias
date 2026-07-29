@@ -72,7 +72,6 @@ export default function CheckoutPage() {
                 "application/json",
             },
 
-
             body: JSON.stringify({
 
               name,
@@ -118,7 +117,35 @@ export default function CheckoutPage() {
 
 
 
-      setPix(data);
+      setPix({
+
+        ...data,
+
+
+        qr_code:
+          data.qr_code ||
+          data.payment
+            ?.point_of_interaction
+            ?.transaction_data
+            ?.qr_code,
+
+
+        qr_code_base64:
+          data.qr_code_base64 ||
+          data.payment
+            ?.point_of_interaction
+            ?.transaction_data
+            ?.qr_code_base64,
+
+
+        ticket_url:
+          data.ticket_url ||
+          data.payment
+            ?.point_of_interaction
+            ?.transaction_data
+            ?.ticket_url,
+
+      });
 
 
 
@@ -144,26 +171,16 @@ export default function CheckoutPage() {
 
 
 
-
-
-  const payment =
-    pix?.payment
-      ?.payment_method;
-
-
-
   const qrCode =
-    payment?.qr_code;
-
+    pix?.qr_code;
 
 
   const qrBase64 =
-    payment?.qr_code_base64;
-
+    pix?.qr_code_base64;
 
 
   const ticketUrl =
-    payment?.ticket_url;
+    pix?.ticket_url;
 
 
 
@@ -171,8 +188,10 @@ export default function CheckoutPage() {
 
   async function copiarPix(){
 
+
     if(!qrCode)
       return;
+
 
 
     await navigator.clipboard.writeText(
@@ -184,12 +203,8 @@ export default function CheckoutPage() {
       "Código PIX copiado!"
     );
 
+
   }
-
-
-
-
-
   return (
 
     <main className="min-h-screen bg-black text-white pt-32 pb-20">
@@ -218,7 +233,6 @@ export default function CheckoutPage() {
 
 
             <div className="space-y-5">
-
 
 
               <input
@@ -272,7 +286,6 @@ export default function CheckoutPage() {
                 className="w-full rounded-lg border border-neutral-700 bg-black px-4 py-3 outline-none focus:border-red-600"
 
               />
-
 
 
             </div>
@@ -347,244 +360,261 @@ export default function CheckoutPage() {
 
             ))}
 
-<div className="border-t border-neutral-800 my-6" />
 
 
 
-<div className="flex justify-between">
 
-  <span>
-    Subtotal
-  </span>
+            <div className="border-t border-neutral-800 my-6" />
 
 
-  <span className={
-    hasDiscount
-      ? "line-through text-neutral-500"
-      : ""
-  }>
 
-    R$ {subtotal},00
+            <div className="flex justify-between">
 
-  </span>
+              <span>
+                Subtotal
+              </span>
 
 
-</div>
+              <span className={
+                hasDiscount
+                  ? "line-through text-neutral-500"
+                  : ""
+              }>
 
+                R$ {subtotal},00
 
+              </span>
 
 
+            </div>
 
-{hasDiscount && (
 
-  <>
 
-    <div className="mt-4 rounded-lg border border-red-600/30 bg-red-600/10 p-3 text-sm text-red-400">
 
-      🔥 Pacote 5+ fotos aplicado
 
-      <br />
+            {hasDiscount && (
 
-      R$12,00 por foto
+              <>
 
-    </div>
+                <div className="mt-4 rounded-lg border border-red-600/30 bg-red-600/10 p-3 text-sm text-red-400">
 
+                  🔥 Pacote 5+ fotos aplicado
 
+                  <br />
 
-    <div className="mt-4 flex justify-between text-green-400">
+                  R$12,00 por foto
 
-      <span>
-        Economia
-      </span>
+                </div>
 
 
-      <span>
-        -R$ {economy},00
-      </span>
 
+                <div className="mt-4 flex justify-between text-green-400">
 
-    </div>
+                  <span>
+                    Economia
+                  </span>
 
-  </>
 
-)}
+                  <span>
+                    -R$ {economy},00
+                  </span>
 
 
+                </div>
 
 
+              </>
 
+            )}
 
 
-<div className="mt-6 border-t border-neutral-800 pt-6 flex justify-between text-2xl font-bold">
 
 
-  <span>
-    Total
-  </span>
 
 
-  <span>
-    R$ {total},00
-  </span>
 
+            <div className="mt-6 border-t border-neutral-800 pt-6 flex justify-between text-2xl font-bold">
 
-</div>
 
+              <span>
+                Total
+              </span>
 
 
+              <span>
+                R$ {total},00
+              </span>
 
 
+            </div>
 
 
-{!pix ? (
 
-  <Button
 
-    onClick={gerarPix}
 
-    disabled={loading}
 
-    className="mt-8 w-full bg-red-600 hover:bg-red-700"
 
-  >
+            {!pix ? (
 
-    {loading
 
-      ? "Gerando PIX..."
+              <Button
 
-      : "Gerar PIX"
+                onClick={gerarPix}
 
-    }
+                disabled={loading}
 
+                className="mt-8 w-full bg-red-600 hover:bg-red-700"
 
-  </Button>
+              >
 
+                {loading
 
-) : (
+                  ? "Gerando PIX..."
 
+                  : "Gerar PIX"
 
-  <div className="mt-8 rounded-xl bg-black p-5">
+                }
 
 
-    <h3 className="mb-4 font-bold text-xl">
+              </Button>
 
-      PIX Gerado
 
-    </h3>
 
+            ) : (
 
 
 
-    {qrBase64 ? (
+              <div className="mt-8 rounded-xl bg-black p-5">
 
-      <img
 
-        src={
-          `data:image/png;base64,${qrBase64}`
-        }
 
-        alt="QR Code PIX"
+                <h3 className="mb-4 font-bold text-xl">
 
-        className="mx-auto w-64 rounded-lg bg-white p-2"
+                  PIX Gerado
 
-      />
+                </h3>
 
-    ) : (
 
-      <p className="text-red-400">
 
-        QR Code não retornado
 
-      </p>
 
-    )}
+                {qrBase64 ? (
 
 
+                  <img
 
+                    src={
+                      `data:image/png;base64,${qrBase64}`
+                    }
 
+                    alt="QR Code PIX"
 
+                    className="mx-auto w-64 rounded-lg bg-white p-2"
 
-    {qrCode && (
+                  />
 
-      <>
 
+                ) : (
 
-        <textarea
 
-          readOnly
+                  <p className="text-red-400">
 
-          value={qrCode}
+                    QR Code não retornado
 
-          className="mt-5 h-28 w-full rounded-lg bg-neutral-900 p-3 text-xs"
+                  </p>
 
-        />
 
+                )}
 
 
-        <Button
 
-          onClick={copiarPix}
 
-          className="mt-3 w-full bg-green-600 hover:bg-green-700"
 
-        >
 
-          Copiar código PIX
+                {qrCode && (
 
-        </Button>
 
+                  <>
 
-      </>
 
-    )}
+                    <textarea
 
+                      readOnly
 
+                      value={qrCode}
 
+                      className="mt-5 h-28 w-full rounded-lg bg-neutral-900 p-3 text-xs"
 
+                    />
 
 
 
-    {ticketUrl && (
+                    <Button
 
-      <a
+                      onClick={copiarPix}
 
-        href={ticketUrl}
+                      className="mt-3 w-full bg-green-600 hover:bg-green-700"
 
-        target="_blank"
+                    >
 
-        className="mt-3 block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-bold hover:bg-red-700"
+                      Copiar código PIX
 
-      >
+                    </Button>
 
-        Abrir pagamento Mercado Pago
 
-      </a>
+                  </>
 
-    )}
 
+                )}
 
 
-  </div>
 
 
-)}
 
 
+                {ticketUrl && (
 
-</aside>
 
+                  <a
 
+                    href={ticketUrl}
 
-</div>
+                    target="_blank"
 
+                    className="mt-3 block w-full rounded-lg bg-red-600 px-4 py-3 text-center font-bold hover:bg-red-700"
 
+                  >
 
-</Container>
+                    Abrir pagamento Mercado Pago
 
+                  </a>
 
-</main>
 
+                )}
 
-);
+
+
+              </div>
+
+
+            )}
+
+
+
+          </aside>
+
+
+
+        </div>
+
+
+
+      </Container>
+
+
+    </main>
+
+
+  );
 
 }
