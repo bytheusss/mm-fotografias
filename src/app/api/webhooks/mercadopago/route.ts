@@ -29,6 +29,18 @@ export async function POST(
     );
 
 
+    // ignora eventos que não são pagamento
+    if (
+      body.type !== "payment"
+    ) {
+
+      return NextResponse.json({
+        received: true,
+      });
+
+    }
+
+
     const paymentId =
       body?.data?.id;
 
@@ -42,43 +54,34 @@ export async function POST(
     }
 
 
-    const paymentApi = new Payment(client);
+    const paymentApi =
+      new Payment(client);
 
-
-    let payment;
-
-
-    try {
-
-      payment = await paymentApi.get({
+      console.log(
+        "BUSCANDO PAGAMENTO:",
+        paymentId
+      );
+      
+      console.log(
+        "TOKEN MP:",
+        process.env.MERCADO_PAGO_ACCESS_TOKEN?.slice(0,15)
+      );
+    const payment =
+      await paymentApi.get({
         id: paymentId,
       });
 
 
-    } catch (err) {
-
-
-      console.error(
-        "ERRO BUSCANDO PAGAMENTO MP:",
-        err
-      );
-
-
-      return NextResponse.json({
-        received: true,
-        message: "Pagamento não encontrado",
-      });
-
-
-    }
-
+    console.log(
+      "PAGAMENTO ENCONTRADO:",
+      payment.id
+    );
 
 
     console.log(
-      "STATUS PAGAMENTO:",
+      "STATUS:",
       payment.status
     );
-
 
 
     if (
@@ -90,16 +93,19 @@ export async function POST(
         await supabaseAdmin
           .from("orders")
           .update({
+
             status: "paid",
+
           })
           .eq(
+
             "mercado_pago_payment_id",
-            payment.id
+            String(payment.id)
+
           );
 
 
-
-      if (error) {
+      if(error){
 
         console.error(
           "ERRO UPDATE SUPABASE:",
@@ -109,17 +115,23 @@ export async function POST(
       }
 
 
+      console.log(
+        "PEDIDO ATUALIZADO COMO PAGO"
+      );
+
+
     }
 
 
-
     return NextResponse.json({
-      success: true,
+
+      success:true,
+
     });
 
 
 
-  } catch (error:any) {
+  } catch(error:any){
 
 
     console.error(
@@ -128,15 +140,15 @@ export async function POST(
     );
 
 
+    // MP precisa receber 200 para não ficar reenviando infinitamente
 
-    return NextResponse.json(
-      {
-        error: error.message,
-      },
-      {
-        status: 500,
-      }
-    );
+    return NextResponse.json({
+
+      received:true,
+
+      error:error.message
+
+    });
 
 
   }

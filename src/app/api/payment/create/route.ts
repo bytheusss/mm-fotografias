@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-
 import {
   MercadoPagoConfig,
   Order,
@@ -7,25 +6,13 @@ import {
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-
 const client = new MercadoPagoConfig({
-  accessToken:
-    process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+  accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
 });
 
-
-
-export async function POST(
-  request: Request
-) {
-
+export async function POST(request: Request) {
   try {
-
-
-    const body =
-      await request.json();
-
-
+    const body = await request.json();
 
     const {
       name,
@@ -33,242 +20,144 @@ export async function POST(
       whatsapp,
       items,
       total,
-
     } = body;
 
-
-
-    if(
-      !email ||
-      !items ||
-      !total
-    ){
-
+    if (!email || !items || !total) {
       return NextResponse.json(
         {
-          error:"Dados incompletos"
+          error: "Dados incompletos",
         },
         {
-          status:400
+          status: 400,
         }
       );
-
     }
 
-
-
-    // 1 - cria pedido no Supabase
+    // ===========================
+    // Salva pedido no Supabase
+    // ===========================
 
     const {
       data: orderDB,
-      error: dbError
-
+      error: dbError,
     } = await supabaseAdmin
       .from("orders")
       .insert({
-
         name,
-
         email,
-
         whatsapp,
-
-        photos:
-          items,
-
+        photos: items,
         total,
-
-        status:
-          "pending"
-
+        status: "pending",
       })
       .select()
       .single();
 
-
-
-    if(dbError){
-
-      console.error(
-        "SUPABASE ERROR:",
-        dbError
-      );
-
-
+    if (dbError) {
+      console.error("SUPABASE ERROR:", dbError);
       throw dbError;
-
     }
 
+    console.log("PEDIDO SALVO:", orderDB.id);
 
+    // ===========================
+    // Cria pedido Mercado Pago
+    // ===========================
 
+    const order = new Order(client);
 
-    // 2 - cria PIX Mercado Pago
+    const response = await order.create({
+      body: {
+        type: "online",
 
+        processing_mode: "automatic",
 
-    const order =
-      new Order(client);
+        total_amount: Number(total).toFixed(2),
 
+        payer: {
+          email,
+          first_name: name || "Cliente",
+        },
 
+        transactions: {
+          payments: [
+            {
+              amount: Number(total).toFixed(2),
 
-    const response =
-      await order.create({
+              payment_method: {
+                id: "pix",
+                type: "bank_transfer",
+              },
+            },
+          ],
+        },
 
-        body:{
+        external_reference: String(orderDB.id),
+      },
+    });
 
-
-          type:"online",
-
-
-          processing_mode:
-            "automatic",
-
-
-
-          total_amount:
-            Number(total)
-              .toFixed(2),
-
-
-
-          payer:{
-
-            email,
-
-            first_name:
-              name ||
-              "Cliente"
-
-          },
-
-
-
-          transactions:{
-
-            payments:[
-
-              {
-
-                amount:
-                  Number(total)
-                  .toFixed(2),
-
-
-                payment_method:{
-
-                  id:"pix",
-
-                  type:
-                    "bank_transfer"
-
-                }
-
-              }
-
-            ]
-
-          },
-
-
-          external_reference:
-            orderDB.id
-
-
-        }
-
-      });
-
-
-
-
+    console.log("ORDER RESPONSE:", response);
 
     const payment =
-      response
-      .transactions
-      ?.payments?.[0];
+      response.transactions?.payments?.[0];
 
+    // ===========================
+    // Atualiza pedido
+    // ===========================
 
+    const { error: updateError } =
+      await supabaseAdmin
+        .from("orders")
+        .update({
+          mercado_pago_order_id: String(response.id),
+          mercado_pago_payment_id: String(payment?.id),
+        })
+        .eq("id", orderDB.id);
 
-
-
-    // 3 - atualiza pedido com dados MP
-
-
-    await supabaseAdmin
-      .from("orders")
-      .update({
-
-        mercado_pago_order_id:
-          response.id,
-
-
-        mercado_pago_payment_id:
-          payment?.id
-
-
-      })
-      .eq(
-        "id",
-        orderDB.id
+    if (updateError) {
+      console.error(
+        "ERRO UPDATE SUPABASE:",
+        updateError
       );
+    }
 
+    // ===========================
+    // LOGS
+    // ===========================
 
-
-
-
-
+    console.log("ORDER ID:", response.id);
+    console.log("PAYMENT ID:", payment?.id);
+    console.log("STATUS:", payment?.status);
     console.log(
-      "PEDIDO SALVO:",
+      "EXTERNAL REFERENCE:",
       orderDB.id
     );
 
-
-
     return NextResponse.json({
+      success: true,
 
-      success:true,
+      order_id: response.id,
 
+      payment_id: payment?.id,
 
-      order_id:
-        response.id,
-
-
-      payment_id:
-        payment?.id,
-
-
-      payment
-
-
+      payment,
     });
+  } catch (error: any) {
+    console.error("PAYMENT ERROR:", error);
 
-
-
-
-  } catch(error:any){
-
-
-    console.error(
-      "PAYMENT ERROR:",
-      error
-    );
-
-
+    if (error?.cause) {
+      console.error("CAUSE:", error.cause);
+    }
 
     return NextResponse.json(
-
       {
         error:
-          error.message ||
-          "Erro ao criar pagamento"
+          error?.message ||
+          "Erro ao criar pagamento",
       },
-
       {
-        status:500
+        status: 500,
       }
-
     );
-
-
   }
-
 }
