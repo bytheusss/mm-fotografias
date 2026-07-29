@@ -50,6 +50,7 @@ export default async function DownloadPage({
 
 
 
+
   if (
     order.status !== "paid"
   ) {
@@ -91,6 +92,7 @@ export default async function DownloadPage({
 
 
 
+
   return (
 
     <main className="min-h-screen bg-black text-white pt-32 pb-20">
@@ -111,6 +113,7 @@ export default async function DownloadPage({
 
 
 
+
         <div className="grid gap-6 md:grid-cols-3">
 
 
@@ -124,7 +127,7 @@ export default async function DownloadPage({
 
 
                 <img
-                  src={photo.imagem}
+                  src={photo.thumbnail || photo.imagem}
                   alt={`Foto ${photo.numero}`}
                   className="rounded-lg mb-4"
                 />
@@ -132,7 +135,7 @@ export default async function DownloadPage({
 
 
                 <a
-                  href={photo.imagem}
+                  href={`/api/download/${token}`}
                   target="_blank"
                   className="block text-center rounded-lg bg-red-600 px-4 py-3 font-bold hover:bg-red-700"
                 >
