@@ -1,99 +1,141 @@
-"use client";
-
-import { useState } from "react";
-
-export default function DownloadAllButton({
-  token,
-}: {
-  token: string;
-}) {
-
-  const [loading, setLoading] = useState(false);
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import JSZip from "jszip";
 
 
-  async function downloadAll() {
+export async function GET(
+  request: Request,
+  {
+    params,
+  }: {
+    params: Promise<{
+      token: string;
+    }>;
+  }
+) {
 
-    try {
-
-      setLoading(true);
-
-
-      const response =
-        await fetch(`/api/download-all/${token}`);
-
-
-      const data =
-        await response.json();
-
+  const { token } = await params;
 
 
-      if (!data.downloads) {
+  const { data: order, error } =
+    await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq(
+        "download_token",
+        token
+      )
+      .single();
 
-        alert("Nenhuma foto encontrada");
-        return;
 
+
+  if(error || !order){
+
+    return NextResponse.json(
+      {
+        error:"Pedido não encontrado"
+      },
+      {
+        status:404
       }
-
-
-
-      for (const photo of data.downloads) {
-
-        const link =
-          document.createElement("a");
-
-        link.href =
-          photo.url;
-
-        link.download =
-          `${photo.numero}.jpg`;
-
-        document.body.appendChild(link);
-
-        link.click();
-
-        link.remove();
-
-
-        await new Promise(
-          resolve => setTimeout(resolve, 500)
-        );
-
-      }
-
-
-    } catch(error){
-
-      console.error(error);
-
-      alert(
-        "Erro ao baixar fotos"
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
+    );
 
   }
 
 
 
-  return (
+  if(order.status !== "paid"){
 
-    <button
-      onClick={downloadAll}
-      disabled={loading}
-      className="inline-block rounded-lg bg-green-600 px-6 py-3 font-bold hover:bg-green-700 transition disabled:opacity-50"
-    >
-
-      {loading
-        ? "Preparando downloads..."
-        : "📦 Baixar todas as fotos"
+    return NextResponse.json(
+      {
+        error:"Pagamento pendente"
+      },
+      {
+        status:403
       }
+    );
 
-    </button>
+  }
 
+
+
+  const photos =
+    typeof order.photos === "string"
+      ? JSON.parse(order.photos)
+      : order.photos;
+
+
+
+  const zip = new JSZip();
+
+
+
+  for(const photo of photos){
+
+
+    const filePath =
+      photo.imagem
+        .split("/thumbnails/")
+        .pop();
+
+
+
+    const { data } =
+      await supabaseAdmin
+        .storage
+        .from("originals")
+        .createSignedUrl(
+          filePath,
+          60
+        );
+
+
+
+    if(!data?.signedUrl){
+      continue;
+    }
+
+
+
+    const response =
+      await fetch(
+        data.signedUrl
+      );
+
+
+    const arrayBuffer =
+      await response.arrayBuffer();
+
+
+
+    zip.file(
+      `${photo.numero}.jpg`,
+      arrayBuffer
+    );
+
+
+  }
+
+
+
+  const zipBuffer =
+    await zip.generateAsync({
+      type:"arraybuffer"
+    });
+
+
+
+  return new NextResponse(
+    zipBuffer,
+    {
+      headers:{
+        "Content-Type":
+          "application/zip",
+
+        "Content-Disposition":
+          `attachment; filename="fotos-${token}.zip"`
+      }
+    }
   );
 
 }
