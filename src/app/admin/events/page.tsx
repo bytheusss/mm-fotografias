@@ -1,0 +1,254 @@
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+
+export default async function EventsAdminPage(){
+
+
+  const { data: events, error } =
+    await supabaseAdmin
+      .from("events")
+      .select("*")
+      .order(
+        "event_date",
+        {
+          ascending:false
+        }
+      );
+
+
+  if(error){
+    console.error(error);
+  }
+
+
+
+  return (
+
+    <main
+      className="
+        min-h-screen
+        bg-black
+        text-white
+        pt-32
+        pb-20
+      "
+    >
+
+      <div
+        className="
+          max-w-6xl
+          mx-auto
+          px-6
+        "
+      >
+
+
+        <div
+          className="
+            flex
+            justify-between
+            items-center
+            mb-10
+          "
+        >
+
+          <h1
+            className="
+              text-4xl
+              font-bold
+            "
+          >
+            Eventos
+          </h1>
+
+
+          <a
+            href="/admin/events/new"
+            className="
+              bg-red-600
+              hover:bg-red-700
+              px-5
+              py-3
+              rounded-lg
+              font-bold
+            "
+          >
+            + Novo evento
+          </a>
+
+
+        </div>
+
+
+
+
+
+        <div className="grid gap-6">
+
+
+          {
+            events?.map(
+              (event:any)=>(
+
+
+                <div
+                  key={event.id}
+                  className="
+                    bg-neutral-900
+                    border
+                    border-neutral-800
+                    rounded-xl
+                    p-6
+                    flex
+                    justify-between
+                    items-center
+                  "
+                >
+
+
+
+                  <div
+                    className="
+                      flex
+                      gap-5
+                      items-center
+                    "
+                  >
+
+
+
+                    <img
+                      src={event.cover_image}
+                      alt={event.name}
+                      className="
+                        w-28
+                        h-28
+                        object-cover
+                        rounded-xl
+                      "
+                    />
+
+
+
+                    <div>
+
+
+                      <h2
+                        className="
+                          text-2xl
+                          font-bold
+                        "
+                      >
+                        {event.name}
+                      </h2>
+
+
+                      <p
+                        className="
+                          text-neutral-400
+                        "
+                      >
+                        📍 {event.city}
+                      </p>
+
+
+                      <p
+                        className="
+                          text-neutral-400
+                        "
+                      >
+                        📸 {event.total_photos || 0} fotos
+                      </p>
+
+
+
+                      <p className="mt-2">
+
+                        {
+                          event.published
+                          ?
+                          "🟢 Publicado"
+                          :
+                          "🔴 Rascunho"
+                        }
+
+                      </p>
+
+
+                    </div>
+
+
+                  </div>
+
+
+
+
+
+
+                  <div
+                    className="
+                      flex
+                      gap-3
+                    "
+                  >
+
+
+                    <a
+                      href={`/eventos/${event.slug}`}
+                      target="_blank"
+                      className="
+                        bg-neutral-700
+                        hover:bg-neutral-600
+                        px-5
+                        py-3
+                        rounded-lg
+                        font-bold
+                      "
+                    >
+                      Ver página
+                    </a>
+
+
+
+
+                    <a
+                      href={`/admin/events/${event.id}`}
+                      className="
+                        bg-red-600
+                        hover:bg-red-700
+                        px-5
+                        py-3
+                        rounded-lg
+                        font-bold
+                      "
+                    >
+                      Gerenciar
+                    </a>
+
+
+
+                  </div>
+
+
+
+
+                </div>
+
+
+              )
+            )
+          }
+
+
+        </div>
+
+
+
+      </div>
+
+
+    </main>
+
+  );
+
+}
