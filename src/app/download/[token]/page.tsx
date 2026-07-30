@@ -55,6 +55,17 @@ export default async function DownloadPage({
           Obrigado pela compra!
         </p>
 
+        {photos.length > 1 && (
+          <div className="mb-8">
+            <a
+              href={`/api/download-all/${token}`}
+              className="inline-block rounded-lg bg-green-600 px-6 py-3 font-bold hover:bg-green-700 transition"
+            >
+              📦 Baixar todas as fotos
+            </a>
+          </div>
+        )}
+
         <div className="grid gap-6 md:grid-cols-3">
 
           {photos.map((photo: any) => (
