@@ -10,8 +10,6 @@ export default async function DownloadPage({
 }) {
   const { token } = await params;
 
-  console.log("TOKEN RECEBIDO:", token);
-
   const { data: order, error } =
     await supabaseAdmin
       .from("orders")
@@ -20,7 +18,6 @@ export default async function DownloadPage({
       .single();
 
   if (error || !order) {
-    console.error("PEDIDO NÃO ENCONTRADO:", error);
     notFound();
   }
 
@@ -46,10 +43,8 @@ export default async function DownloadPage({
       ? JSON.parse(order.photos)
       : order.photos;
 
-
   return (
     <main className="min-h-screen bg-black text-white pt-32 pb-20">
-
       <div className="mx-auto max-w-5xl px-6">
 
         <h1 className="text-4xl font-bold mb-3">
@@ -60,41 +55,37 @@ export default async function DownloadPage({
           Obrigado pela compra!
         </p>
 
-
         <div className="grid gap-6 md:grid-cols-3">
 
-          {photos.map(
-            (photo: any) => (
+          {photos.map((photo: any) => (
 
-              <div
-                key={photo.id}
-                className="rounded-xl border border-neutral-800 bg-neutral-900 p-4"
+            <div
+              key={photo.numero}
+              className="rounded-xl border border-neutral-800 bg-neutral-900 p-4"
+            >
+
+              <img
+                src={photo.thumbnail || photo.imagem}
+                alt={`Foto ${photo.numero}`}
+                className="rounded-lg mb-4"
+              />
+
+              <a
+                href={`/api/download/${token}?photo=${photo.numero}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center rounded-lg bg-red-600 px-4 py-3 font-bold hover:bg-red-700 transition"
               >
+                Baixar foto #{photo.numero}
+              </a>
 
-                <img
-                  src={photo.thumbnail || photo.imagem}
-                  alt={`Foto ${photo.numero}`}
-                  className="rounded-lg mb-4"
-                />
+            </div>
 
-
-                <a
-                  href={`/api/download/${token}?photo=${photo.numero}`}
-                  className="block text-center rounded-lg bg-red-600 px-4 py-3 font-bold hover:bg-red-700"
-                >
-                  Baixar foto #{photo.numero}
-                </a>
-
-
-              </div>
-
-            )
-          )}
+          ))}
 
         </div>
 
       </div>
-
     </main>
   );
 }
