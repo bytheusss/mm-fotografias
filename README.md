@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# M&M Fotografias
 
-## Getting Started
+Loja de fotografias em Next.js 16, Supabase e Mercado Pago.
 
-First, run the development server:
+## Preparação local
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. Copie `.env.example` para `.env.local` e preencha apenas com credenciais próprias.
+2. Instale com `npm ci`.
+3. Rode `npm run dev`.
+
+## Publicação da v1.0
+
+Antes de publicar, revise e execute `supabase/migrations/202608200001_v1_customer_security.sql` no SQL Editor. A migration cria perfis, adiciona `orders.user_id`, vincula pedidos antigos por e-mail, configura RLS e torna `originals` privado. Ela não apaga nem move objetos.
+
+Defina na Vercel as variáveis de `.env.example`. Secrets jamais devem usar o prefixo `NEXT_PUBLIC_`.
+
+Para habilitar e-mail, verifique um domínio/remetente no Resend e configure `RESEND_API_KEY` e `EMAIL_FROM`. Sem ambas, compra e pagamento continuam funcionando e o envio é ignorado.
+
+Promova o primeiro administrador manualmente, substituindo o e-mail:
+
+```sql
+update public.profiles p set role = 'admin'
+from auth.users u where p.id = u.id and lower(u.email) = lower('SEU_EMAIL');
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No Mercado Pago, mantenha `/api/webhooks/mercadopago` e configure a assinatura em `MERCADO_PAGO_WEBHOOK_SECRET`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verificação
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Após o deploy, faça um teste real de baixo valor: cadastro, perfil, carrinho, PIX, webhook, Minha Conta e downloads. Teste também pedido pendente/cancelado e acesso de cliente comum a `/admin`.

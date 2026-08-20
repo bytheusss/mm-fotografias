@@ -6,6 +6,8 @@ import {
 } from "mercadopago";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { sendPurchaseEmail } from "@/lib/email";
 
 
 const client = new MercadoPagoConfig({
@@ -22,8 +24,23 @@ export async function POST(
   try {
 
 
+    const rawBody = await request.text();
     const body =
-      await request.json();
+      JSON.parse(rawBody);
+
+    const webhookSecret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signature = request.headers.get("x-signature") || "";
+      const requestId = request.headers.get("x-request-id") || "";
+      const parts = Object.fromEntries(signature.split(",").map(part => part.trim().split("=")));
+      const dataId = new URL(request.url).searchParams.get("data.id") || body.data?.id;
+      const manifest = `id:${dataId};request-id:${requestId};ts:${parts.ts};`;
+      const expected = createHmac("sha256", webhookSecret).update(manifest).digest("hex");
+      const received = parts.v1 || "";
+      if (expected.length !== received.length || !timingSafeEqual(Buffer.from(expected), Buffer.from(received))) {
+        return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
+      }
+    }
 
 
 
@@ -149,9 +166,7 @@ export async function POST(
     } =
       await supabaseAdmin
       .from("orders")
-      .select(
-        "download_token"
-      )
+      .select("download_token,status,email,name,total,paid_email_sent_at")
       .eq(
         "id",
         externalReference
@@ -206,6 +221,13 @@ export async function POST(
       );
 
 
+    }
+
+    if (!error && order && order.status !== "paid" && !order.paid_email_sent_at) {
+      try {
+        const result = await sendPurchaseEmail({ to: order.email, name: order.name, orderId: String(externalReference), total: Number(order.total), token, kind: "paid" });
+        if (!result.skipped) await supabaseAdmin.from("orders").update({ paid_email_sent_at: new Date().toISOString() }).eq("id", externalReference).is("paid_email_sent_at", null);
+      } catch (emailError) { console.error("PAID EMAIL ERROR", emailError); }
     }
 
 

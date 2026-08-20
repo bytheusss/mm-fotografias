@@ -6,6 +6,8 @@ import {
 } from "mercadopago";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getApiUser } from "@/lib/api-auth";
+import { sendPurchaseEmail } from "@/lib/email";
 
 
 const client = new MercadoPagoConfig({
@@ -28,15 +30,12 @@ export async function POST(
       email,
       whatsapp,
       items,
-      total,
-
     } = body;
 
 
     if (
       !email ||
-      !items ||
-      !total
+      !Array.isArray(items) || items.length === 0
     ) {
 
       return NextResponse.json(
@@ -52,7 +51,18 @@ export async function POST(
 
 
 
-    // SALVA PEDIDO
+    if (items.length > 100 || !items.every((item: unknown) => item && typeof item === "object" && "id" in item)) {
+      return NextResponse.json({ error: "Itens inválidos" }, { status: 400 });
+    }
+
+    const user = await getApiUser();
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (user?.email && user.email.toLowerCase() !== normalizedEmail) {
+      return NextResponse.json({ error: "Use o e-mail da sua conta ou saia para comprar como visitante." }, { status: 400 });
+    }
+    // O servidor calcula o preço; nunca confia no total enviado pelo navegador.
+    const pricePerPhoto = items.length >= 5 ? 12 : 15;
+    const total = items.length * pricePerPhoto;
 
     const {
       data: orderDB,
@@ -64,7 +74,7 @@ export async function POST(
 
         name,
 
-        email,
+        email: normalizedEmail,
 
         whatsapp,
 
@@ -72,7 +82,9 @@ export async function POST(
 
         total,
 
-        status:"pending"
+        status:"pending",
+
+        user_id: user?.id || null
 
       })
       .select()
@@ -127,7 +139,7 @@ export async function POST(
 
           payer:{
 
-            email,
+            email: normalizedEmail,
 
             first_name:
               name || "Cliente"
@@ -173,6 +185,9 @@ export async function POST(
         "id",
         orderDB.id
       );
+
+    await sendPurchaseEmail({ to: normalizedEmail, name, orderId: String(orderDB.id), total, kind: "created" })
+      .catch((emailError) => console.error("ORDER EMAIL ERROR", emailError));
 
 
 

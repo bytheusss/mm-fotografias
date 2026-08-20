@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useCart } from "@/context/CartContext";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
+import { createClient } from "@/lib/supabase/client";
 
 
 export default function CheckoutPage() {
@@ -30,6 +31,21 @@ export default function CheckoutPage() {
 
   const [pix, setPix] =
     useState<any>(null);
+
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    async function prefill() {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      const { data: profile } = await supabase.from("profiles").select("full_name,phone").eq("id", data.user.id).maybeSingle();
+      setName(profile?.full_name || data.user.user_metadata?.name || "");
+      setWhatsapp(profile?.phone || data.user.user_metadata?.whatsapp || "");
+      setEmail(data.user.email || "");
+    }
+    prefill();
+  }, []);
 
 
 
@@ -58,6 +74,9 @@ export default function CheckoutPage() {
 
     try {
 
+      setErrorMessage("");
+      if (!items.length) { setErrorMessage("Seu carrinho está vazio."); return; }
+      if (!name.trim() || !email.trim()) { setErrorMessage("Preencha nome e e-mail."); return; }
       setLoading(true);
 
 
@@ -109,7 +128,7 @@ export default function CheckoutPage() {
 
       if(data.error){
 
-        alert(data.error);
+        setErrorMessage(data.error);
 
         return;
 
@@ -155,9 +174,7 @@ export default function CheckoutPage() {
       console.error(error);
 
 
-      alert(
-        "Erro ao gerar PIX"
-      );
+      setErrorMessage("Erro ao gerar PIX. Tente novamente.");
 
 
     } finally {
@@ -457,7 +474,7 @@ export default function CheckoutPage() {
             {!pix ? (
 
 
-              <Button
+              <>{errorMessage && <p role="alert" className="mb-4 rounded-lg bg-red-950 p-3 text-sm text-red-200">{errorMessage}</p>}<Button
 
                 onClick={gerarPix}
 
@@ -476,7 +493,7 @@ export default function CheckoutPage() {
                 }
 
 
-              </Button>
+              </Button></>
 
 
 

@@ -36,14 +36,12 @@ export async function GET(
     );
   }
 
-  const photos =
-    typeof order.photos === "string"
-      ? JSON.parse(order.photos)
-      : order.photos;
+  let photos: Array<{ numero?: string | number; imagem?: string }> = [];
+  try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }
 
   const selectedPhoto =
     photos.find(
-      (p: any) => p.numero === photo
+      (p) => String(p.numero) === photo
     );
 
   if (!selectedPhoto) {
@@ -55,6 +53,7 @@ export async function GET(
 
   const filePath =
     selectedPhoto.imagem
+      ?.split("?")[0]
       .split("/thumbnails/")
       .pop();
 
@@ -88,6 +87,8 @@ export async function GET(
     headers: {
       "Content-Type": imageResponse.headers.get("Content-Type") ?? "image/jpeg",
       "Content-Disposition": `attachment; filename="${selectedPhoto.numero}.jpg"`,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

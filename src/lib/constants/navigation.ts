@@ -16,4 +16,6 @@ export const FOOTER_LINKS: NavLink[] = [
   { label: "Sobre", href: "#sobre" },
   { label: "Contato", href: "#contato" },
   { label: "FAQ", href: "#faq" },
+  { label: "Política de Privacidade", href: "/privacidade" },
+  { label: "Termos de Uso e Compra", href: "/termos" },
 ];

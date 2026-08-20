@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { SITE } from "@/lib/constants/site";
 import { useCart } from "@/context/CartContext";
+import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 
 function CartIcon() {
@@ -69,6 +71,14 @@ export function Navbar() {
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then((result: { data: { user: unknown } }) => setAuthenticated(Boolean(result.data.user)));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => setAuthenticated(Boolean(session?.user)));
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
 
 
@@ -172,22 +182,22 @@ export function Navbar() {
 
 
           <Button
-            href="/login"
+            href={authenticated ? "/minha-conta" : "/login"}
             variant="ghost"
             size="sm"
           >
-            Login
+            {authenticated ? "Minha Conta" : "Login"}
           </Button>
 
 
 
-          <Button
+          {!authenticated && <Button
             href="/cadastro"
             variant="outline"
             size="sm"
           >
             Cadastrar
-          </Button>
+          </Button>}
 
 
 
@@ -276,14 +286,14 @@ export function Navbar() {
             <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
 
 
-              <Button href="/login" variant="ghost">
-                Login
+              <Button href={authenticated ? "/minha-conta" : "/login"} variant="ghost">
+                {authenticated ? "Minha Conta" : "Login"}
               </Button>
 
 
-              <Button href="/cadastro" variant="outline">
+              {!authenticated && <Button href="/cadastro" variant="outline">
                 Cadastrar
-              </Button>
+              </Button>}
 
 
 

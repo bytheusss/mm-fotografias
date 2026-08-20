@@ -62,10 +62,8 @@ export async function GET(
 
 
 
-  const photos =
-    typeof order.photos === "string"
-      ? JSON.parse(order.photos)
-      : order.photos;
+  let photos: Array<{ numero?: string | number; imagem?: string }> = [];
+  try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }
 
 
 
@@ -78,6 +76,7 @@ export async function GET(
 
     const filePath =
       photo.imagem
+        ?.split("?")[0]
         .split("/thumbnails/")
         .pop();
 
@@ -132,9 +131,7 @@ export async function GET(
 
 
 
-  return NextResponse.json({
-    downloads
-  });
+  return NextResponse.json({ downloads }, { headers: { "Cache-Control": "private, no-store" } });
 
 
 }

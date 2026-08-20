@@ -39,7 +39,7 @@ export const getEventPhotos = cache(
   ): Promise<EventPhoto[]> => {
 
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
 
 

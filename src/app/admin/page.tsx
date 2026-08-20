@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import Link from "next/link";
 
 export default async function AdminPage() {
 
@@ -44,6 +45,9 @@ export default async function AdminPage() {
         "status",
         "sold"
       );
+
+  const { data: paidOrders } = await supabaseAdmin.from("orders").select("total").eq("status", "paid");
+  const revenue = paidOrders?.reduce((sum, order) => sum + Number(order.total || 0), 0) || 0;
 
 
 
@@ -96,10 +100,7 @@ export default async function AdminPage() {
             value={available || 0}
           />
 
-          <Card
-            title="Vendidas"
-            value={sold || 0}
-          />
+          <Card title="Vendidas" value={sold || 0} />
 
 
         </div>
@@ -136,6 +137,8 @@ export default async function AdminPage() {
               Gerenciar eventos
             </a>
 
+            <Link href="/admin/orders" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Pedidos</Link>
+
 
             <a
               href="/admin/upload"
@@ -155,6 +158,8 @@ export default async function AdminPage() {
 
 
         </div>
+
+        <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-6"><p className="text-neutral-400">Faturamento confirmado</p><p className="mt-2 text-3xl font-bold">{revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div>
 
 
 
