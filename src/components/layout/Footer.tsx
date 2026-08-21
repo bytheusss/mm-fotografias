@@ -107,10 +107,12 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href={`tel:${SITE.phone}`}
+                  href={`https://wa.me/${SITE.whatsappSecondary}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-muted transition-colors duration-300 hover:text-foreground"
                 >
-                  Telefone: {SITE.phoneDisplay}
+                  WhatsApp: {SITE.whatsappSecondaryDisplay}
                 </a>
               </li>
               <li>

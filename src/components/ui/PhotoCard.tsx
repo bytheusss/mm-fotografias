@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import type { EventPhoto } from "@/types";
+import { PhotoWatermark } from "@/components/ui/PhotoWatermark";
 
 
 interface PhotoCardProps {
@@ -49,7 +50,7 @@ export function PhotoCard({
         type="button"
         aria-label={favorites.some(item => item.id === photo.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
         onClick={() => toggleFavorite(photo)}
-        className="absolute right-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-xl text-white hover:bg-red-600"
+        className="absolute right-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-xl text-white hover:bg-red-600"
       >
         {favorites.some(item => item.id === photo.id) ? "♥" : "♡"}
       </button>
@@ -62,15 +63,16 @@ export function PhotoCard({
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         sizes={sizes}
       />
+      <PhotoWatermark compact />
 
 
-      <div className="absolute inset-0 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />
+      <div className="absolute inset-0 z-20 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />
 
 
 
       <div
         className="
-        absolute inset-x-0 bottom-0 
+        absolute inset-x-0 bottom-0 z-30
         flex translate-y-full flex-col 
         items-center gap-2 p-4
         transition-transform duration-500

@@ -9,8 +9,9 @@ export default function UploadPage() {
   const [loading,setLoading] = useState(false);
   const [message,setMessage] = useState("");
   const [progress,setProgress] = useState(0);
+  const [events,setEvents] = useState<Array<{ id: string; name: string; slug: string; archived: boolean }>>([]);
 
-  useEffect(() => { const timer = window.setTimeout(() => setEventId(new URLSearchParams(window.location.search).get("event") || ""), 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { const timer = window.setTimeout(async () => { const selected = new URLSearchParams(window.location.search).get("event") || ""; const response = await fetch("/api/admin/events"); const data = await response.json(); setEvents(data.events || []); setEventId(selected); }, 0); return () => window.clearTimeout(timer); }, []);
 
 
   async function handleUpload(){
@@ -19,6 +20,7 @@ export default function UploadPage() {
       alert("Selecione as fotos");
       return;
     }
+    if(!eventId){ alert("Selecione o evento"); return; }
 
     setLoading(true);
     setMessage(""); setProgress(0); let sent = 0;
@@ -79,10 +81,10 @@ export default function UploadPage() {
 
 
           <label className="block mb-2">
-            ID do Evento
+            Evento
           </label>
 
-          <input
+          <select
             className="
               w-full
               bg-neutral-800
@@ -91,12 +93,11 @@ export default function UploadPage() {
               mb-5
               outline-none
             "
-            placeholder="uuid do evento"
             value={eventId}
             onChange={
               e=>setEventId(e.target.value)
             }
-          />
+          ><option value="">Selecione o evento</option>{events.filter(event => !event.archived).map(event => <option key={event.id} value={event.id}>{event.name} ({event.slug})</option>)}</select>
 
 
           <label className="block mb-2">
