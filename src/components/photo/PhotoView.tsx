@@ -1,12 +1,10 @@
 "use client";
 
-import { notFound } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
 import type { EventPhoto } from "@/types";
 
@@ -63,7 +61,7 @@ export function PhotoView({
             overflow-hidden
             rounded-lg
             bg-neutral-900
-          ">
+          " onContextMenu={event => event.preventDefault()}>
 
 
             <Image
@@ -72,7 +70,10 @@ export function PhotoView({
               fill
               className="object-contain"
               priority
+              draggable={false}
             />
+
+            <div className="absolute inset-0 z-10 select-none" aria-hidden="true" />
 
 
           </div>

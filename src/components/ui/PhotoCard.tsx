@@ -43,6 +43,7 @@ export function PhotoCard({
 
     <div
       className={`group relative overflow-hidden rounded-sm ${className}`}
+      onContextMenu={event => event.preventDefault()}
     >
 
       <button
@@ -61,6 +62,7 @@ export function PhotoCard({
         priority={priority}
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         sizes={sizes}
+        draggable={false}
       />
 
 
