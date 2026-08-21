@@ -1,24 +1,26 @@
-type PurchaseEmail = { to: string; name?: string; orderId: string; total: number; token?: string | null; kind: "created" | "paid" };
+type PurchaseEmail = { to: string; name?: string; orderId: string; total: number; token?: string | null; kind: "created" | "paid"; quantity?: number; discount?: number; couponCode?: string | null };
+const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] || char);
+const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+export function renderPurchaseEmail(input: PurchaseEmail) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mm-fotografias.vercel.app"; const paid = input.kind === "paid"; const orderCode = input.orderId.slice(0, 8).toUpperCase();
+  const actionUrl = paid && input.token ? `${siteUrl}/download/${encodeURIComponent(input.token)}` : `${siteUrl}/minha-conta`; const actionLabel = paid && input.token ? "Baixar minhas fotografias" : "Acompanhar meu pedido";
+  const status = paid ? "Pagamento confirmado" : "Pedido recebido"; const color = paid ? "#16a34a" : "#dc2626";
+  const intro = paid ? "Seu pagamento foi aprovado e suas fotografias já estão disponíveis." : "Recebemos seu pedido. Assim que o PIX for aprovado, enviaremos a liberação das fotografias.";
+  const rows = `${input.quantity ? `<tr><td style="padding:8px 0;color:#a3a3a3">Fotografias</td><td style="padding:8px 0;text-align:right;font-weight:700">${input.quantity}</td></tr>` : ""}${input.couponCode ? `<tr><td style="padding:8px 0;color:#a3a3a3">Cupom</td><td style="padding:8px 0;text-align:right;font-weight:700">${escapeHtml(input.couponCode)}</td></tr>` : ""}${input.discount ? `<tr><td style="padding:8px 0;color:#a3a3a3">Desconto</td><td style="padding:8px 0;text-align:right;font-weight:700;color:#4ade80">− ${money(input.discount)}</td></tr>` : ""}`;
+  const notice = paid ? "As imagens liberadas são os arquivos originais, em alta resolução e sem marca-d’água. Guarde este e-mail para acessar seu pedido." : "O PIX pode levar alguns instantes para ser confirmado. Não é necessário enviar comprovante: a confirmação acontece automaticamente.";
+  const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${status}</title></head><body style="margin:0;background:#090909;color:#fff;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden">${intro}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#090909"><tr><td align="center" style="padding:32px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#171717;border:1px solid #2b2b2b;border-radius:18px;overflow:hidden"><tr><td style="padding:28px 32px;background:#050505;border-bottom:3px solid #dc2626"><div style="font-size:24px;font-weight:900">M&amp;M <span style="color:#dc2626">FOTOGRAFIAS</span></div><div style="margin-top:6px;color:#a3a3a3;font-size:13px">Sua lembrança em alta resolução</div></td></tr><tr><td style="padding:34px 32px"><div style="display:inline-block;padding:7px 12px;border-radius:999px;background:${color};font-size:12px;font-weight:800;text-transform:uppercase">${status}</div><h1 style="margin:24px 0 10px;font-size:30px;line-height:1.2">Olá, ${escapeHtml(input.name?.trim() || "cliente")}!</h1><p style="margin:0 0 26px;color:#d4d4d4;line-height:1.65">${intro}</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:18px 20px;background:#0a0a0a;border:1px solid #303030;border-radius:12px"><tr><td style="padding:8px 0;color:#a3a3a3">Pedido</td><td style="padding:8px 0;text-align:right;font-weight:800">#${orderCode}</td></tr>${rows}<tr><td style="padding:14px 0 4px;border-top:1px solid #303030;color:#d4d4d4;font-weight:700">Total</td><td style="padding:14px 0 4px;border-top:1px solid #303030;text-align:right;font-size:25px;font-weight:900">${money(input.total)}</td></tr></table><div style="padding:28px 0 10px;text-align:center"><a href="${actionUrl}" style="display:inline-block;padding:15px 24px;border-radius:10px;background:#dc2626;color:#fff;text-decoration:none;font-weight:800">${actionLabel}</a></div><div style="margin-top:22px;padding:16px;border-left:3px solid ${color};background:#101010;color:#d4d4d4;font-size:13px;line-height:1.55">${notice}</div></td></tr><tr><td style="padding:24px 32px;background:#0a0a0a;color:#737373;font-size:12px;line-height:1.6;text-align:center">M&amp;M Fotografias · Rio Claro — SP<br>Precisa de ajuda? Responda a este e-mail ou fale conosco pelo site.<br><span style="color:#525252">Mensagem automática referente ao pedido #${orderCode}.</span></td></tr></table></td></tr></table></body></html>`;
+  return { subject: `${status} · #${orderCode} · M&M Fotografias`, html, text: `${status}\n\nOlá, ${input.name || "cliente"}.\n${intro}\n\nPedido: #${orderCode}\nTotal: ${money(input.total)}\n\n${actionLabel}: ${actionUrl}\n\nM&M Fotografias — Rio Claro/SP` };
+}
 
 export async function sendPurchaseEmail(input: PurchaseEmail) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mmfotografias.com.br";
-  if (!apiKey || !from) return { skipped: true };
-  const paid = input.kind === "paid";
-  const download = paid && input.token ? `<p><a href="${siteUrl}/download/${encodeURIComponent(input.token)}">Baixar fotografias</a></p>` : "";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to: [input.to], subject: paid ? "Pagamento confirmado — M&M Fotografias" : "Pedido recebido — M&M Fotografias", html: `<h1>${paid ? "Pagamento confirmado" : "Pedido recebido"}</h1><p>Olá, ${input.name || "cliente"}. Seu pedido #${input.orderId.slice(0,8).toUpperCase()} ${paid ? "foi aprovado" : "foi criado"}.</p><p>Total: R$ ${input.total.toFixed(2).replace(".", ",")}</p>${download}` }),
-  });
-  if (!response.ok) throw new Error(`Falha ao enviar e-mail (${response.status})`);
-  return { skipped: false };
+  const apiKey = process.env.RESEND_API_KEY; const from = process.env.EMAIL_FROM; if (!apiKey || !from) return { skipped: true as const, reason: "E-mail não configurado" };
+  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [input.to], ...renderPurchaseEmail(input) }) });
+  if (!response.ok) throw new Error(`Falha ao enviar e-mail (${response.status})`); return { skipped: false as const };
 }
 
 export async function sendRecoveryEmail(input: { to: string; name?: string | null; quantity: number }) {
-  const apiKey = process.env.RESEND_API_KEY; const from = process.env.EMAIL_FROM; const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mm-fotografias.vercel.app";
-  if (!apiKey || !from) return { skipped: true };
-  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [input.to], subject: "Suas fotos ainda estão esperando", html: `<h1>Suas fotos estão esperando</h1><p>Olá, ${input.name || "cliente"}. Você separou ${input.quantity} foto(s) na M&M Fotografias.</p><p><a href="${siteUrl}/carrinho">Continuar compra</a></p><p>Você recebeu esta mensagem porque autorizou um lembrete no checkout.</p>` }) });
+  const apiKey = process.env.RESEND_API_KEY; const from = process.env.EMAIL_FROM; const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://mm-fotografias.vercel.app"; if (!apiKey || !from) return { skipped: true };
+  const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [input.to], subject: "Suas fotos ainda estão esperando", html: `<h1>Suas fotos estão esperando</h1><p>Olá, ${escapeHtml(input.name || "cliente")}. Você separou ${input.quantity} foto(s) na M&M Fotografias.</p><p><a href="${siteUrl}/carrinho">Continuar compra</a></p><p>Você recebeu esta mensagem porque autorizou um lembrete no checkout.</p>` }) });
   if (!response.ok) throw new Error(`Falha ao enviar e-mail (${response.status})`); return { skipped: false };
 }
