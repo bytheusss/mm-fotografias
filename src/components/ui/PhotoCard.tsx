@@ -11,6 +11,7 @@ interface PhotoCardProps {
   priority?: boolean;
   sizes?: string;
   className?: string;
+  onView?: () => void;
 }
 
 
@@ -20,6 +21,7 @@ export function PhotoCard({
   priority = false,
   sizes = "(max-width: 768px) 50vw, 33vw",
   className = "aspect-square",
+  onView,
 }: PhotoCardProps) {
 
 
@@ -87,14 +89,7 @@ export function PhotoCard({
 
 
 
-        <Button
-          href={`/eventos/${photo.slug}/${photo.numero}`}
-          size="sm"
-          variant="secondary"
-          className="w-full"
-        >
-          Visualizar
-        </Button>
+        {onView ? <button type="button" onClick={onView} className="w-full rounded-sm bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-neutral-200">Visualizar</button> : <Button href={`/eventos/${photo.slug}/${photo.numero}`} size="sm" variant="secondary" className="w-full">Visualizar</Button>}
 
 
 

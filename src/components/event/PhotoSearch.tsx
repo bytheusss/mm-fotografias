@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { PhotoCard } from "@/components/ui/PhotoCard";
 import type { EventPhoto } from "@/types";
+import { GalleryLightbox } from "@/components/event/GalleryLightbox";
 
 interface PhotoSearchProps {
   photos: EventPhoto[];
@@ -11,6 +12,7 @@ interface PhotoSearchProps {
 export function PhotoSearch({ photos }: PhotoSearchProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const filteredPhotos = useMemo(() => {
     const value = search.replace(/\D/g, "");
@@ -75,10 +77,12 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
             <PhotoCard
               key={photo.id}
               photo={photo}
+              onView={() => setSelectedId(photo.id)}
             />
           ))}
         </div>
       )}
+      {selectedId && <GalleryLightbox photos={filteredPhotos} index={Math.max(0, filteredPhotos.findIndex(photo => photo.id === selectedId))} onIndexChange={index => setSelectedId(filteredPhotos[index]?.id || null)} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }
