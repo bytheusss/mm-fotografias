@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import type { EventPhoto } from "@/types";
+import { calculatePrice } from "@/lib/pricing";
 
 
 interface CartContextProps {
@@ -29,6 +30,10 @@ interface CartContextProps {
 
   discountLabel: string;
 
+  favorites: EventPhoto[];
+
+  toggleFavorite: (photo: EventPhoto) => void;
+
 }
 
 
@@ -41,6 +46,7 @@ const CartContext =
 
 
 const CART_KEY = "mm-fotografias-cart";
+const FAVORITES_KEY = "mm-fotografias-favorites";
 
 
 
@@ -53,6 +59,8 @@ export function CartProvider({
 
   const [items, setItems] =
     useState<EventPhoto[]>([]);
+
+  const [favorites, setFavorites] = useState<EventPhoto[]>([]);
 
 
 
@@ -82,6 +90,8 @@ export function CartProvider({
 
     }
 
+    try { setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { localStorage.removeItem(FAVORITES_KEY); }
+
   }, []);
 
 
@@ -97,6 +107,12 @@ export function CartProvider({
     );
 
   }, [items]);
+
+  useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
+
+  function toggleFavorite(photo: EventPhoto) {
+    setFavorites(current => current.some(item => item.id === photo.id) ? current.filter(item => item.id !== photo.id) : [...current, photo]);
+  }
 
 
 
@@ -187,32 +203,7 @@ export function CartProvider({
 
 
 
-  const discountLabel = (() => {
-
-    const quantity =
-      items.length;
-
-
-
-    if (quantity >= 10) {
-
-      return "Pacote 10+ fotos aplicado (R$10 cada)";
-
-    }
-
-
-
-    if (quantity >= 5) {
-
-      return "Pacote 5+ fotos aplicado (R$12 cada)";
-
-    }
-
-
-
-    return "";
-
-  })();
+  const discountLabel = calculatePrice(items.length).label;
 
 
 
@@ -221,33 +212,7 @@ export function CartProvider({
 
 
 
-  const total = (() => {
-
-    const quantity =
-      items.length;
-
-
-
-    if (quantity >= 10) {
-
-      return quantity * 10;
-
-    }
-
-
-
-    if (quantity >= 5) {
-
-      return quantity * 12;
-
-    }
-
-
-
-    return quantity * 15;
-
-
-  })();
+  const total = calculatePrice(items.length).total;
 
 
 
@@ -267,6 +232,8 @@ export function CartProvider({
         clearCart,
         total,
         discountLabel,
+        favorites,
+        toggleFavorite,
       }}
 
     >

@@ -26,6 +26,8 @@ export function PhotoCard({
   const {
     addToCart,
     items,
+    favorites,
+    toggleFavorite,
   } = useCart();
 
 
@@ -42,6 +44,15 @@ export function PhotoCard({
     <div
       className={`group relative overflow-hidden rounded-sm ${className}`}
     >
+
+      <button
+        type="button"
+        aria-label={favorites.some(item => item.id === photo.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        onClick={() => toggleFavorite(photo)}
+        className="absolute right-3 top-3 z-20 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-xl text-white hover:bg-red-600"
+      >
+        {favorites.some(item => item.id === photo.id) ? "♥" : "♡"}
+      </button>
 
       <SafeImage
         src={photo.imagem}

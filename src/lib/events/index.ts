@@ -1,10 +1,11 @@
 import { cache } from "react";
+import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { Event, EventPhoto } from "@/types";
 
 
-export const getAllEvents = (): Event[] => {
-  return [
+const fallbackEvents: Event[] = [
     {
       id: "aacrc-05072026",
       slug: "aacrc-05072026",
@@ -16,19 +17,23 @@ export const getAllEvents = (): Event[] => {
         "https://azgbacvirqxppqjbepjq.supabase.co/storage/v1/object/public/thumbnails/aacrc-05072026/0001.jpg",
     },
   ];
-};
+
+export const getAllEvents = cache(async (): Promise<Event[]> => {
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived").eq("published", true).eq("archived", false).order("event_date", { ascending: false });
+  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image })) : fallbackEvents;
+});
 
 
 
-export const getEventBySlug = (
+export const getEventBySlug = cache(async (
   slug: string
-): Event | undefined => {
+): Promise<Event | undefined> => {
 
-  return getAllEvents().find(
+  return (await getAllEvents()).find(
     event => event.slug === slug
   );
 
-};
+});
 
 
 
@@ -43,16 +48,7 @@ export const getEventPhotos = cache(
 
 
 
-    console.log(
-      "SUPABASE URL:",
-      process.env.NEXT_PUBLIC_SUPABASE_URL
-    );
-
-
-    console.log(
-      "SUPABASE KEY:",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10)
-    );
+    const event = await getEventBySlug(slug);
 
 
 
@@ -68,13 +64,6 @@ export const getEventPhotos = cache(
           order: "asc",
         },
       });
-
-
-
-    console.log(
-      "SUPABASE FILES:",
-      files
-    );
 
 
 
@@ -145,7 +134,7 @@ export const getEventPhotos = cache(
 
 
             evento:
-              "Encontro AACRC",
+              event?.name || slug,
 
 
             slug,

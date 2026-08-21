@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ArchiveEventButton } from "@/components/admin/ArchiveEventButton";
 
 
 export default async function EventsAdminPage(){
@@ -174,6 +175,8 @@ export default async function EventsAdminPage(){
 
                       </p>
 
+                      {event.archived && <p className="mt-2 text-amber-400">Arquivado</p>}
+
 
                     </div>
 
@@ -191,6 +194,8 @@ export default async function EventsAdminPage(){
                       gap-3
                     "
                   >
+
+                    <ArchiveEventButton id={event.id} archived={Boolean(event.archived)} />
 
 
                     <a

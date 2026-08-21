@@ -37,6 +37,18 @@ export default function PhotoManager({
     load(page);
   }
 
+  async function savePlate(id: string, plate_text: string) {
+    await fetch(`/api/admin/photos/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plate_text }) });
+    load(page);
+  }
+
+  async function recognizePlate(id: string) {
+    const response = await fetch(`/api/admin/photos/${id}/recognize-plate`, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) alert(data.error);
+    else load(page);
+  }
+
   return (
     <div className="mt-12">
 
@@ -67,6 +79,9 @@ export default function PhotoManager({
               <p className="text-sm text-neutral-400 mb-3">
                 {photo.status}
               </p>
+
+              <input defaultValue={photo.plate_text || ""} placeholder="Placa" onBlur={e => savePlate(photo.id, e.target.value)} className="mb-3 w-full rounded bg-black px-3 py-2 uppercase" />
+              <button type="button" onClick={() => recognizePlate(photo.id)} className="mb-3 w-full rounded bg-neutral-700 py-2">Identificar placa</button>
 
               <button
                 onClick={() => remove(photo.id)}

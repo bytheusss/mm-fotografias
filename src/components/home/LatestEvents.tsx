@@ -5,8 +5,11 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export function LatestEvents() {
+export async function LatestEvents() {
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,archived,published").eq("published", true).eq("archived", false).order("event_date", { ascending: false }).limit(6);
+  const events = data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image })) : LATEST_EVENTS;
   return (
     <section id="eventos" className="bg-background py-20 md:py-28">
       <Container>
@@ -16,7 +19,7 @@ export function LatestEvents() {
         />
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {LATEST_EVENTS.map((event) => (
+          {events.map((event) => (
             <Card key={event.id} hover className="group overflow-hidden !p-0">
               <div className="relative aspect-[16/10] overflow-hidden">
                 <SafeImage

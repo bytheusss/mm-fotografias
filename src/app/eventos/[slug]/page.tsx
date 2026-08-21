@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import {
   getEventBySlug,
   getEventPhotos,
+  getAllEvents,
 } from "@/lib/events";
 
 import { Container } from "@/components/ui/Container";
@@ -17,11 +18,7 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  return [
-    {
-      slug: "aacrc-05072026",
-    },
-  ];
+  return (await getAllEvents()).map(event => ({ slug: event.slug }));
 }
 
 export default async function EventoPage({
@@ -29,7 +26,7 @@ export default async function EventoPage({
 }: PageProps) {
   const { slug } = await params;
 
-  const event = getEventBySlug(slug);
+  const event = await getEventBySlug(slug);
 
   if (!event) {
     notFound();

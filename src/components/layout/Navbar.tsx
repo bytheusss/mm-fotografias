@@ -199,6 +199,8 @@ export function Navbar() {
             Cadastrar
           </Button>}
 
+          <Button href="/favoritos" variant="ghost" size="sm">Favoritos</Button>
+
 
 
 
@@ -294,6 +296,8 @@ export function Navbar() {
               {!authenticated && <Button href="/cadastro" variant="outline">
                 Cadastrar
               </Button>}
+
+              <Button href="/favoritos" variant="ghost">Favoritos</Button>
 
 
 

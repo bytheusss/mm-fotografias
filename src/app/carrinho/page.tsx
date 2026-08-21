@@ -6,6 +6,7 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartContext";
 import { SafeImage } from "@/components/ui/SafeImage";
+import { calculatePrice } from "@/lib/pricing";
 
 
 export default function CartPage() {
@@ -13,20 +14,12 @@ export default function CartPage() {
   const {
     items,
     removeFromCart,
-    total,
   } = useCart();
 
 
 
-  const hasDiscount = items.length >= 5;
-
-  const pricePerPhoto = hasDiscount ? 12 : 15;
-
-  const subtotal = items.length * 15;
-
-  const finalTotal = items.length * pricePerPhoto;
-
-  const economy = subtotal - finalTotal;
+  const { pricePerPhoto, subtotal, total: finalTotal, economy, label } = calculatePrice(items.length);
+  const hasDiscount = Boolean(label);
 
 
 
@@ -284,12 +277,7 @@ export default function CartPage() {
                     "
                   >
 
-                    🔥 Pacote 5+ fotos aplicado
-                    <br />
-
-                    <strong>
-                      R$12,00 cada foto
-                    </strong>
+                    🔥 {label}
 
                   </div>
 

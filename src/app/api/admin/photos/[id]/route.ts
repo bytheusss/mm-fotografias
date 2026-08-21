@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = await request.json();
+  const plate = typeof body.plate_text === "string" ? body.plate_text.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 10) : null;
+  const { error } = await supabaseAdmin.from("photos").update({ plate_text: plate || null }).eq("id", id);
+  return error ? NextResponse.json({ error: "Falha ao salvar placa" }, { status: 500 }) : NextResponse.json({ success: true, plate_text: plate });
+}
+
 
 export async function DELETE(
   req: Request,

@@ -7,6 +7,7 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { createClient } from "@/lib/supabase/client";
+import { calculatePrice } from "@/lib/pricing";
 
 
 export default function CheckoutPage() {
@@ -33,6 +34,9 @@ export default function CheckoutPage() {
     useState<any>(null);
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState("");
 
   useEffect(() => {
     async function prefill() {
@@ -49,24 +53,19 @@ export default function CheckoutPage() {
 
 
 
-  const hasDiscount =
-    items.length >= 5;
+  const { pricePerPhoto, subtotal, total, economy, label } = calculatePrice(items.length);
+  const hasDiscount = Boolean(label);
+  const finalTotal = Math.max(0, total - couponDiscount);
 
-
-  const pricePerPhoto =
-    hasDiscount ? 12 : 15;
-
-
-  const subtotal =
-    items.length * 15;
-
-
-  const total =
-    items.length * pricePerPhoto;
-
-
-  const economy =
-    subtotal - total;
+  async function validateCoupon() {
+    setCouponMessage("");
+    const response = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponCode, quantity: items.length }) });
+    const data = await response.json();
+    if (!response.ok) { setCouponDiscount(0); setCouponMessage(data.error || "Cupom inválido"); return; }
+    setCouponDiscount(Number(data.discount || 0));
+    setCouponCode(String(data.code || couponCode).toUpperCase());
+    setCouponMessage(`Cupom aplicado: -R$ ${Number(data.discount || 0).toFixed(2).replace(".", ",")}`);
+  }
 
 
 
@@ -101,7 +100,9 @@ export default function CheckoutPage() {
 
               items,
 
-              total,
+              total: finalTotal,
+
+              couponCode,
 
             }),
 
@@ -383,6 +384,12 @@ export default function CheckoutPage() {
 
             <div className="border-t border-neutral-800 my-6" />
 
+            <div className="mb-5 flex gap-2">
+              <input value={couponCode} onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponDiscount(0); }} placeholder="Cupom" className="min-w-0 flex-1 rounded-lg border border-neutral-700 bg-black px-3 py-2 uppercase" />
+              <button type="button" onClick={validateCoupon} className="rounded-lg bg-neutral-700 px-4 py-2 font-bold">Aplicar</button>
+            </div>
+            {couponMessage && <p className={`mb-5 text-sm ${couponDiscount ? "text-green-400" : "text-red-400"}`}>{couponMessage}</p>}
+
 
 
             <div className="flex justify-between">
@@ -415,11 +422,7 @@ export default function CheckoutPage() {
 
                 <div className="mt-4 rounded-lg border border-red-600/30 bg-red-600/10 p-3 text-sm text-red-400">
 
-                  🔥 Pacote 5+ fotos aplicado
-
-                  <br />
-
-                  R$12,00 por foto
+                  🔥 {label}
 
                 </div>
 
@@ -459,7 +462,7 @@ export default function CheckoutPage() {
 
 
               <span>
-                R$ {total},00
+                  R$ {finalTotal.toFixed(2).replace(".", ",")}
               </span>
 
 

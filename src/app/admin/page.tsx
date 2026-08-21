@@ -139,6 +139,8 @@ export default async function AdminPage() {
 
             <Link href="/admin/orders" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Pedidos</Link>
 
+            <Link href="/admin/coupons" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Cupons</Link>
+
 
             <a
               href="/admin/upload"

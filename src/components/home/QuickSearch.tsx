@@ -11,6 +11,7 @@ export function QuickSearch() {
   const [photoNumber, setPhotoNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [plate, setPlate] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,12 +23,9 @@ export function QuickSearch() {
       return;
     }
 
-    const formattedNumber = number.padStart(4, "0");
-
     setLoading(true);
     setMessage(null);
-
-    router.push(`/eventos/aacrc-05072026/${formattedNumber}`);
+    router.push(`/buscar?numero=${encodeURIComponent(number.padStart(4, "0"))}`);
   }
 
   return (
@@ -68,6 +66,11 @@ export function QuickSearch() {
             >
               Buscar
             </Button>
+          </form>
+
+          <form onSubmit={e => { e.preventDefault(); const value = plate.replace(/[^a-z0-9]/gi, "").toUpperCase(); if (value.length < 3) { setMessage("Digite ao menos 3 caracteres da placa."); return; } router.push(`/buscar?placa=${encodeURIComponent(value)}`); }} className="mx-auto mt-4 flex max-w-3xl flex-col gap-4 sm:flex-row">
+            <input value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="Buscar por placa (quando identificada)" className="flex-1 rounded-sm border border-border bg-background-secondary px-6 py-4 text-lg uppercase" />
+            <Button type="submit" size="lg" variant="outline" className="shrink-0 px-10">Buscar placa</Button>
           </form>
 
           {message && (
