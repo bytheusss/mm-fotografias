@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 
 export default function EditEventPage(){
@@ -15,6 +16,7 @@ export default function EditEventPage(){
   const [loading,setLoading] = useState(true);
   const [saving,setSaving] = useState(false);
   const [uploading,setUploading] = useState(false);
+  const [uploadStage,setUploadStage] = useState("");
 
 
   const [newCover,setNewCover] = useState<File|null>(null);
@@ -116,112 +118,27 @@ export default function EditEventPage(){
 
 
     setUploading(true);
-
-
-
-    const fd =
-      new FormData();
-
-
-
-    fd.append(
-      "file",
-      newCover
-    );
-
-
-    fd.append(
-      "event_id",
-      id
-    );
-
-
-
-
-
-    const res =
-      await fetch(
-        "/api/admin/events/upload-cover",
-        {
-          method:"POST",
-          body:fd
-        }
-      );
-
-
-
-    const data =
-      await res.json();
-
-
-
-
-
-    if(data.success){
-
-
-
-      const updatedForm = {
-
-        ...form,
-
-        cover_image:data.url
-
-      };
-
-
-
-      setForm(
-        updatedForm
-      );
-
-
-
-
-      await fetch(
-        `/api/admin/events/${id}`,
-        {
-
-          method:"PUT",
-
-          headers:{
-            "Content-Type":"application/json"
-          },
-
-
-          body:
-          JSON.stringify(
-            updatedForm
-          )
-
-        }
-      );
-
-
-
-      alert(
-        "Capa enviada e salva!"
-      );
-
-
-
+    try {
+      setUploadStage("Preparando…");
+      const signedResponse = await fetch(`/api/admin/events/${id}/cover-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: newCover.size, type: newCover.type }), signal: AbortSignal.timeout(30000) });
+      const signed = await signedResponse.json().catch(() => ({}));
+      if (!signedResponse.ok) throw new Error(signed.error || "Não foi possível preparar o envio.");
+      setUploadStage("Enviando…");
+      const { error: uploadError } = await createClient().storage.from("thumbnails").uploadToSignedUrl(signed.path, signed.token, newCover, { contentType: newCover.type });
+      if (uploadError) throw uploadError;
+      setUploadStage("Processando…");
+      const finishResponse = await fetch(`/api/admin/events/${id}/cover-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path }), signal: AbortSignal.timeout(90000) });
+      const data = await finishResponse.json().catch(() => ({}));
+      if (!finishResponse.ok) throw new Error(data.error || "Erro ao processar a capa.");
+      setForm(current => ({ ...current, cover_image: data.url }));
       setNewCover(null);
-
-
-
-    }else{
-
-
-      alert(
-        data.error || "Erro no upload"
-      );
-
-
+      alert("Capa enviada e salva!");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro no upload da capa.");
+    } finally {
+      setUploading(false);
+      setUploadStage("");
     }
-
-
-
-    setUploading(false);
 
 
   }
@@ -560,7 +477,7 @@ export default function EditEventPage(){
               {
                 uploading
                 ?
-                "Enviando..."
+                uploadStage || "Enviando…"
                 :
                 "Enviar nova capa"
               }
