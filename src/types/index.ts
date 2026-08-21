@@ -12,12 +12,15 @@ export interface Event {
   photoCount: number;
   image: string;
   shareMessage?: string | null;
+  basePrice?: number;
+  accessMode?: "public" | "unlisted" | "password";
 }
 
 export type PhotoStatus = "available" | "sold" | "reserved";
 
 export interface EventPhoto {
   id: string;
+  eventId?: string;
   numero: string;
   evento: string;
   slug: string;

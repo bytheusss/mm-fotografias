@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { hashEventPassword } from "@/lib/event-access";
 
 
 
@@ -88,7 +89,7 @@ export async function PUT(
     slug,
     cover_image,
     published,
-    share_message
+    share_message, base_price, access_mode, access_password
 
   } = body;
 
@@ -96,20 +97,18 @@ export async function PUT(
 
 
 
+  const price = Number(base_price);
+  if (!Number.isFinite(price) || price <= 0) return NextResponse.json({ error: "Informe um preço válido." }, { status: 400 });
+  if (!["public", "unlisted", "password"].includes(access_mode)) return NextResponse.json({ error: "Visibilidade inválida." }, { status: 400 });
+  const update: Record<string, unknown> = { name, city, event_date, slug, cover_image, published, share_message: String(share_message || "").trim().slice(0, 1200) || null, base_price: price, access_mode };
+  if (access_mode === "password" && String(access_password || "").trim()) update.access_password_hash = hashEventPassword(id, String(access_password));
+  if (access_mode !== "password") update.access_password_hash = null;
+  if (access_mode === "password" && !update.access_password_hash) { const { data: current } = await supabaseAdmin.from("events").select("access_password_hash").eq("id", id).maybeSingle(); if (!current?.access_password_hash) return NextResponse.json({ error: "Defina uma senha para proteger o álbum." }, { status: 400 }); }
+
   const { data:event, error } =
     await supabaseAdmin
       .from("events")
-      .update({
-
-        name,
-        city,
-        event_date,
-        slug,
-        cover_image,
-        published,
-        share_message: String(share_message || "").trim().slice(0, 1200) || null
-
-      })
+      .update(update)
       .eq(
         "id",
         id

@@ -19,8 +19,8 @@ const fallbackEvents: Event[] = [
   ];
 
 export const getAllEvents = cache(async (): Promise<Event[]> => {
-  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived,share_message").eq("published", true).eq("archived", false).order("event_date", { ascending: false });
-  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message })) : fallbackEvents;
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived,share_message,base_price,access_mode").eq("published", true).eq("archived", false).eq("access_mode", "public").order("event_date", { ascending: false });
+  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode })) : fallbackEvents;
 });
 
 
@@ -29,9 +29,8 @@ export const getEventBySlug = cache(async (
   slug: string
 ): Promise<Event | undefined> => {
 
-  return (await getAllEvents()).find(
-    event => event.slug === slug
-  );
+  const { data: event } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,share_message,base_price,access_mode").eq("slug", slug).eq("published", true).eq("archived", false).maybeSingle();
+  return event ? { id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode } : undefined;
 
 });
 
@@ -44,26 +43,10 @@ export const getEventPhotos = cache(
   ): Promise<EventPhoto[]> => {
 
 
-    const supabase = await createClient();
-
-
-
     const event = await getEventBySlug(slug);
-
-
-
-    const {
-      data: files,
-      error
-    } = await supabase.storage
-      .from("thumbnails")
-      .list(slug, {
-        limit: 1000,
-        sortBy: {
-          column: "name",
-          order: "asc",
-        },
-      });
+    if (!event) return [];
+    const supabase = await createClient();
+    const { data: files, error } = await supabaseAdmin.from("photos").select("id,number,price,status,thumbnail_path").eq("event_id", event.id).order("number", { ascending: true });
 
 
 
@@ -99,7 +82,7 @@ export const getEventPhotos = cache(
 
       .filter(
         file =>
-          file.name.toLowerCase().endsWith(".jpg")
+          file.status === "available"
       )
 
 
@@ -107,8 +90,7 @@ export const getEventPhotos = cache(
         file => {
 
 
-          const numero =
-            file.name.replace(".jpg", "");
+          const numero = String(file.number).padStart(4, "0");
 
 
 
@@ -116,7 +98,7 @@ export const getEventPhotos = cache(
             supabase.storage
               .from("thumbnails")
               .getPublicUrl(
-                `${slug}/${file.name}`
+                String(file.thumbnail_path).replace(/^thumbnails\//, "")
               )
               .data
               .publicUrl;
@@ -127,14 +109,15 @@ export const getEventPhotos = cache(
           return {
 
             id:
-              `${slug}-${numero}`,
+              file.id,
+            eventId: event.id,
 
 
             numero,
 
 
             evento:
-              event?.name || slug,
+              event.name,
 
 
             slug,
@@ -148,7 +131,7 @@ export const getEventPhotos = cache(
 
 
             preco:
-              15,
+              Number(file.price || event.basePrice || 15),
 
 
             status:

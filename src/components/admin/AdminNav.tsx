@@ -8,6 +8,7 @@ const links = [
   ["⌂", "Visão geral", "/admin"], ["▣", "Eventos", "/admin/events"], ["↑", "Upload", "/admin/upload"],
   ["▤", "Pedidos", "/admin/orders"], ["$", "Pacotes", "/admin/pricing"], ["%", "Cupons", "/admin/coupons"],
   ["◴", "Carrinhos", "/admin/abandoned-carts"], ["↗", "Financeiro", "/admin/finance"],
+  ["◉", "Métricas", "/admin/analytics"],
   ["★", "Promoção", "/admin/promotion"], ["≡", "Auditoria", "/admin/audit"], ["⚙", "Integrações", "/admin/integrations"],
 ] as const;
 

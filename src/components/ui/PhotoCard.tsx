@@ -44,6 +44,7 @@ export function PhotoCard({
     items.some(
       item => item.id === photo.id
     );
+  function track(kind: "favorite" | "cart") { if (!photo.eventId) return; const sessionKey = localStorage.getItem("mm-session") || crypto.randomUUID(); localStorage.setItem("mm-session", sessionKey); void fetch("/api/interactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoId: photo.id, eventId: photo.eventId, kind, sessionKey }) }); }
 
 
 
@@ -59,7 +60,7 @@ export function PhotoCard({
       <button
         type="button"
         aria-label={favorites.some(item => item.id === photo.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-        onClick={() => toggleFavorite(photo)}
+        onClick={() => { toggleFavorite(photo); track("favorite"); }}
         className="absolute right-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-black/70 text-xl text-white hover:bg-red-600"
       >
         {favorites.some(item => item.id === photo.id) ? "♥" : "♡"}
@@ -104,7 +105,7 @@ export function PhotoCard({
 
 
         <button
-          onClick={() => addToCart(photo)}
+          onClick={() => { addToCart(photo); track("cart"); }}
           disabled={alreadyAdded}
           className={`
             w-full rounded-sm px-4 py-2 text-sm font-semibold

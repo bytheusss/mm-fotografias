@@ -10,6 +10,8 @@ import { Container } from "@/components/ui/Container";
 import { PhotoSearch } from "@/components/event/PhotoSearch";
 import { EventShareTools } from "@/components/event/EventShareTools";
 import { ViewTracker } from "@/components/analytics/ViewTracker";
+import { EventPasswordGate } from "@/components/event/EventPasswordGate";
+import { hasEventAccess } from "@/lib/event-access";
 
 export const revalidate = 300;
 
@@ -33,6 +35,7 @@ export default async function EventoPage({
   if (!event) {
     notFound();
   }
+  if (event.accessMode === "password" && !(await hasEventAccess(event.id))) return <EventPasswordGate slug={event.slug} name={event.name} />;
 
   const photos = await getEventPhotos(slug);
 

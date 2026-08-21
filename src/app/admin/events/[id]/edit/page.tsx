@@ -31,7 +31,10 @@ export default function EditEventPage(){
     slug:"",
     cover_image:"",
     published:false,
-    share_message:""
+    share_message:"",
+    base_price:15,
+    access_mode:"public",
+    access_password:""
 
   });
 
@@ -350,6 +353,12 @@ export default function EditEventPage(){
           }
 
           <div><label className="mb-2 block">Mensagem padrão do WhatsApp</label><textarea name="share_message" value={form.share_message || ""} onChange={change} rows={5} maxLength={1200} placeholder="Mensagem sugerida ao compartilhar este evento" className="w-full rounded bg-neutral-800 p-3" /><p className="mt-1 text-xs text-neutral-500">O administrador ainda poderá editar antes de abrir o WhatsApp.</p></div>
+
+          <div><label className="mb-2 block">Preço base por foto (R$)</label><input name="base_price" type="number" min="0.01" step="0.01" value={form.base_price} onChange={change} className="w-full rounded bg-neutral-800 p-3" /></div>
+
+          <div><label className="mb-2 block">Visibilidade do evento</label><select name="access_mode" value={form.access_mode} onChange={change} className="w-full rounded bg-neutral-800 p-3"><option value="public">Público — aparece na lista</option><option value="unlisted">Não listado — somente pelo link</option><option value="password">Protegido por senha</option></select><p className="mt-1 text-xs text-neutral-500">Eventos não listados e protegidos não aparecem na página Eventos.</p></div>
+
+          {form.access_mode === "password" && <div><label className="mb-2 block">Senha do álbum</label><input name="access_password" type="password" value={form.access_password || ""} onChange={change} autoComplete="new-password" placeholder="Deixe em branco para manter a senha atual" className="w-full rounded bg-neutral-800 p-3" /></div>}
 
 
 

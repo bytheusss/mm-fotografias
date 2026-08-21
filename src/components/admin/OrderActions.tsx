@@ -7,17 +7,24 @@ interface Props {
   orderId: string;
   status: string;
   downloadToken?: string | null;
+  revoked?: boolean;
+  adminNotes?: string | null;
+  refundStatus?: string;
 }
 
 export default function OrderActions({
   orderId,
   status,
   downloadToken,
+  revoked = false,
+  adminNotes = "",
+  refundStatus = "none",
 }: Props) {
 
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState(adminNotes || "");
 
   async function update(
     body: any
@@ -87,6 +94,12 @@ export default function OrderActions({
       >
         Pago
       </button>
+
+      <button disabled={loading} onClick={() => update({ downloadAction: revoked ? "restore" : "revoke" })} className="col-span-2 rounded-lg bg-neutral-700 py-3 font-bold hover:bg-neutral-600">{revoked ? "Restaurar downloads" : "Revogar downloads"}</button>
+      <button disabled={loading} onClick={() => update({ downloadAction: "extend" })} className="col-span-2 rounded-lg bg-neutral-700 py-3 font-bold hover:bg-neutral-600">Renovar acesso por 30 dias</button>
+      <label className="col-span-2 text-sm text-neutral-400">Controle de estorno<select defaultValue={refundStatus} onChange={event => update({ refundStatus: event.target.value })} className="mt-2 w-full rounded-lg bg-neutral-800 p-3 text-white"><option value="none">Nenhum</option><option value="requested">Solicitado</option><option value="processing">Em análise</option><option value="refunded">Estornado</option><option value="rejected">Recusado</option></select></label>
+      <label className="col-span-2 text-sm text-neutral-400">Notas internas<textarea value={notes} onChange={event => setNotes(event.target.value)} rows={4} className="mt-2 w-full rounded-lg bg-neutral-800 p-3 text-white" /></label>
+      <button disabled={loading} onClick={() => update({ adminNotes: notes })} className="col-span-2 rounded-lg bg-blue-700 py-3 font-bold hover:bg-blue-600">Salvar notas</button>
 
       <button
         disabled={loading || status === "pending"}

@@ -36,6 +36,7 @@ export async function GET(
     );
   }
   if (order.download_expires_at && new Date(order.download_expires_at) < new Date()) return NextResponse.json({ error: "Link expirado. Solicite um novo acesso." }, { status: 410 });
+  if (order.download_revoked_at) return NextResponse.json({ error: "Acesso aos downloads revogado." }, { status: 403 });
 
   let photos: Array<{ numero?: string | number; imagem?: string }> = [];
   try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }
@@ -84,6 +85,7 @@ export async function GET(
   const blob =
     await imageResponse.blob();
   await supabaseAdmin.from("orders").update({ download_count: Number(order.download_count || 0) + 1 }).eq("id", order.id);
+  await supabaseAdmin.from("download_access_logs").insert({ order_id: order.id, kind: "individual", photo_number: String(selectedPhoto.numero) });
 
   return new NextResponse(blob, {
     headers: {

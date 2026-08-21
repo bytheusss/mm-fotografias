@@ -24,23 +24,25 @@ export default function UploadPage() {
     if(!eventId){ alert("Selecione o evento"); return; }
 
     setLoading(true);
-    setMessage(""); setProgress(0); let sent = 0;
+    setMessage(""); setProgress(0); let sent = 0; let skipped = 0; let processed = 0;
     try {
       for (const file of files) {
         setMessage(`${sent} de ${files.length} · preparando ${file.name}`);
         const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); const checksum = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
         const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type, checksum }), signal: AbortSignal.timeout(30000) });
-        const signed = await signedResponse.json().catch(() => ({})); if (!signedResponse.ok) throw new Error(signed.error || `Erro ao preparar ${file.name}`);
+        const signed = await signedResponse.json().catch(() => ({}));
+        if (signedResponse.status === 409) { skipped += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`); continue; }
+        if (!signedResponse.ok) throw new Error(signed.error || `Erro ao preparar ${file.name}`);
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
         const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
         if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
         const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum }), signal: AbortSignal.timeout(90000) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
-        sent += 1; setProgress(Math.round(sent / files.length * 100)); setMessage(`${sent} de ${files.length} fotos processadas`);
+        sent += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`);
       }
-      setMessage(`${sent} fotos enviadas com marca-d'água nas prévias.`); setFiles([]);
-    } catch (error) { setFiles(current => current.slice(sent)); setMessage(`${sent} enviadas. Restantes mantidas para tentar novamente. ${error instanceof Error ? error.message : "Erro no upload"}`); }
+      setMessage(`${sent} fotos enviadas com proteção; ${skipped} duplicadas ignoradas.`); setFiles([]);
+    } catch (error) { setFiles(current => current.slice(processed)); setMessage(`${sent} enviadas e ${skipped} duplicadas. Restantes mantidas para tentar novamente. ${error instanceof Error ? error.message : "Erro no upload"}`); }
     finally { setLoading(false); }
 
   }
@@ -143,6 +145,7 @@ export default function UploadPage() {
           </p>
 
           {loading && <div className="mb-5 h-3 overflow-hidden rounded bg-neutral-800"><div className="h-full bg-red-600 transition-all" style={{ width: `${progress}%` }} /></div>}
+          <p className="mb-4 text-sm text-neutral-500">Pode repetir a seleção após uma interrupção: arquivos já enviados serão reconhecidos e ignorados automaticamente.</p>
 
 
           <button

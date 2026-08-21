@@ -129,6 +129,9 @@ export default async function OrderPage({
                 orderId={order.id}
                 status={order.status}
                 downloadToken={order.download_token}
+                revoked={Boolean(order.download_revoked_at)}
+                adminNotes={order.admin_notes}
+                refundStatus={order.refund_status}
               />
 
             </div>
