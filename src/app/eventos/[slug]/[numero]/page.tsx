@@ -5,7 +5,6 @@ import { getEventPhoto } from "@/lib/events";
 import { Container } from "@/components/ui/Container";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { AddToCartButton } from "@/components/event/AddToCartButton";
-import { PhotoWatermark } from "@/components/ui/PhotoWatermark";
 
 
 interface Props {
@@ -89,7 +88,6 @@ export default async function FotoPage({
                 className="object-contain"
                 sizes="(max-width: 1024px) 100vw, 70vw"
               />
-              <PhotoWatermark />
 
             </div>
 

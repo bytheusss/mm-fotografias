@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import sharp from "sharp";
 
 
 export async function POST(
@@ -37,6 +38,7 @@ export async function POST(
       );
 
     }
+    if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) return NextResponse.json({ success: false, error: "Use uma imagem JPG, PNG ou WebP de até 10 MB" }, { status: 400 });
 
 
 
@@ -77,24 +79,14 @@ export async function POST(
 
 
 
-    const buffer =
-      Buffer.from(bytes);
-
-
-
-
-
-    const ext =
-      file.name
-      .split(".")
-      .pop();
+    const buffer = await sharp(Buffer.from(bytes)).rotate().resize({ width: 1800, height: 1200, fit: "cover", position: "centre", withoutEnlargement: true }).jpeg({ quality: 86 }).toBuffer();
 
 
 
 
 
     const fileName =
-      `${event.folder}/capa-${Date.now()}.${ext}`;
+      `${event.folder}/capa-${Date.now()}.jpg`;
 
 
 
@@ -109,7 +101,7 @@ export async function POST(
           fileName,
           buffer,
           {
-            contentType:file.type,
+            contentType:"image/jpeg",
             upsert:true
           }
         );

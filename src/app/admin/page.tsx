@@ -143,6 +143,7 @@ export default async function AdminPage() {
             <Link href="/admin/pricing" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Pacotes</Link>
             <Link href="/admin/finance" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Financeiro</Link>
             <Link href="/admin/abandoned-carts" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Carrinhos</Link>
+            <Link href="/admin/integrations" className="rounded-lg bg-neutral-700 px-5 py-3 font-bold">Integrações</Link>
 
 
             <a

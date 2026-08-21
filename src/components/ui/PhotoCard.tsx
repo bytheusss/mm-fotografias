@@ -4,7 +4,6 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import type { EventPhoto } from "@/types";
-import { PhotoWatermark } from "@/components/ui/PhotoWatermark";
 
 
 interface PhotoCardProps {
@@ -63,7 +62,6 @@ export function PhotoCard({
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         sizes={sizes}
       />
-      <PhotoWatermark compact />
 
 
       <div className="absolute inset-0 z-20 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />
