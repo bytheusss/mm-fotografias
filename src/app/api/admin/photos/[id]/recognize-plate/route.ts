@@ -13,9 +13,11 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
   const path = String(photo.original_path).replace(/^originals\//, "");
   const { data: signed } = await supabaseAdmin.storage.from("originals").createSignedUrl(path, 60);
   if (!signed?.signedUrl) return NextResponse.json({ error: "Não foi possível ler o original" }, { status: 500 });
-  const response = await fetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ image_url: signed.signedUrl }) });
+  const isPlateRecognizer = endpoint.includes("platerecognizer.com");
+  const body = isPlateRecognizer ? new URLSearchParams({ upload_url: signed.signedUrl, regions: "br" }) : JSON.stringify({ image_url: signed.signedUrl });
+  const response = await fetch(endpoint, { method: "POST", headers: { Authorization: `${isPlateRecognizer ? "Token" : "Bearer"} ${apiKey}`, "Content-Type": isPlateRecognizer ? "application/x-www-form-urlencoded" : "application/json" }, body });
   const result = await response.json();
-  const plate = String(result.plate || result.plate_text || "").replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 10);
+  const plate = String(result.plate || result.plate_text || result.results?.[0]?.plate || "").replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 10);
   if (!response.ok || !plate) return NextResponse.json({ error: "Placa não identificada" }, { status: 422 });
   await supabaseAdmin.from("photos").update({ plate_text: plate }).eq("id", id);
   return NextResponse.json({ plate });
