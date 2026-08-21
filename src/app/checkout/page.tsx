@@ -7,13 +7,12 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { createClient } from "@/lib/supabase/client";
-import { calculatePrice } from "@/lib/pricing";
 
 
 export default function CheckoutPage() {
 
 
-  const { items } = useCart();
+  const { items, pricing } = useCart();
 
 
   const [name, setName] =
@@ -37,6 +36,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
+  const [recoveryOptIn, setRecoveryOptIn] = useState(false);
 
   useEffect(() => {
     async function prefill() {
@@ -51,9 +51,15 @@ export default function CheckoutPage() {
     prefill();
   }, []);
 
+  useEffect(() => {
+    if (!recoveryOptIn || !items.length || !/^\S+@\S+\.\S+$/.test(email)) return;
+    const timer = window.setTimeout(() => { fetch("/api/cart-leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, whatsapp, items }) }).catch(() => undefined); }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [email, items, name, recoveryOptIn, whatsapp]);
 
 
-  const { pricePerPhoto, subtotal, total, economy, label } = calculatePrice(items.length);
+
+  const { pricePerPhoto, subtotal, total, economy, label } = pricing;
   const hasDiscount = Boolean(label);
   const finalTotal = Math.max(0, total - couponDiscount);
 
@@ -268,6 +274,8 @@ export default function CheckoutPage() {
                 className="w-full rounded-lg border border-neutral-700 bg-black px-4 py-3 outline-none focus:border-red-600"
 
               />
+
+              <label className="flex items-start gap-3 text-sm text-neutral-300"><input type="checkbox" checked={recoveryOptIn} onChange={e => setRecoveryOptIn(e.target.checked)} className="mt-1" /><span>Quero receber um lembrete por e-mail ou WhatsApp se eu não concluir esta compra.</span></label>
 
 
 

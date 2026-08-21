@@ -1,4 +1,4 @@
-export type OrderPhoto = { id?: string; numero?: string | number; imagem?: string; thumbnail_url?: string };
+export type OrderPhoto = { id?: string; numero?: string | number; imagem?: string; thumbnail?: string; thumbnail_url?: string; original_path?: string };
 export function orderPhotos(value: unknown): OrderPhoto[] {
   if (Array.isArray(value)) return value as OrderPhoto[];
   if (typeof value === "string") { try { const parsed = JSON.parse(value); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }

@@ -6,7 +6,6 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/context/CartContext";
 import { SafeImage } from "@/components/ui/SafeImage";
-import { calculatePrice } from "@/lib/pricing";
 
 
 export default function CartPage() {
@@ -14,11 +13,12 @@ export default function CartPage() {
   const {
     items,
     removeFromCart,
+    pricing,
   } = useCart();
 
 
 
-  const { pricePerPhoto, subtotal, total: finalTotal, economy, label } = calculatePrice(items.length);
+  const { pricePerPhoto, subtotal, total: finalTotal, economy, label } = pricing;
   const hasDiscount = Boolean(label);
 
 

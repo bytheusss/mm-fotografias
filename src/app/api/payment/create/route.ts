@@ -10,6 +10,7 @@ import { getApiUser } from "@/lib/api-auth";
 import { sendPurchaseEmail } from "@/lib/email";
 import { calculatePrice } from "@/lib/pricing";
 import { applyCoupon } from "@/lib/coupons";
+import { getPricingPackages } from "@/lib/pricing-server";
 
 
 const client = new MercadoPagoConfig({
@@ -64,7 +65,7 @@ export async function POST(
       return NextResponse.json({ error: "Use o e-mail da sua conta ou saia para comprar como visitante." }, { status: 400 });
     }
     // O servidor calcula o preço; nunca confia no total enviado pelo navegador.
-    const pricing = calculatePrice(items.length);
+    const pricing = calculatePrice(items.length, await getPricingPackages());
     const coupon = await applyCoupon(couponCode, pricing.total);
     const total = coupon.total;
 
@@ -198,6 +199,7 @@ export async function POST(
       const { data: currentCoupon } = await supabaseAdmin.from("coupons").select("uses").eq("code", coupon.code).maybeSingle();
       if (currentCoupon) await supabaseAdmin.from("coupons").update({ uses: Number(currentCoupon.uses || 0) + 1 }).eq("code", coupon.code);
     }
+    await supabaseAdmin.from("abandoned_carts").update({ status: "recovered", updated_at: new Date().toISOString() }).eq("status", "open").eq("email", normalizedEmail);
 
     await sendPurchaseEmail({ to: normalizedEmail, name, orderId: String(orderDB.id), total, kind: "created" })
       .catch((emailError) => console.error("ORDER EMAIL ERROR", emailError));

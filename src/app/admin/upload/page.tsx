@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function UploadPage() {
 
   const [files,setFiles] = useState<File[]>([]);
   const [eventId,setEventId] = useState("");
-  const [slug,setSlug] = useState("");
-
   const [loading,setLoading] = useState(false);
   const [message,setMessage] = useState("");
+  const [progress,setProgress] = useState(0);
+
+  useEffect(() => { const timer = window.setTimeout(() => setEventId(new URLSearchParams(window.location.search).get("event") || ""), 0); return () => window.clearTimeout(timer); }, []);
 
 
   async function handleUpload(){
@@ -19,43 +20,18 @@ export default function UploadPage() {
       return;
     }
 
-    const formData = new FormData();
-
-    files.forEach(file=>{
-      formData.append("files", file);
-    });
-
-    formData.append("event_id", eventId);
-    formData.append("slug", slug);
-
     setLoading(true);
-
-    const response = await fetch(
-      "/api/upload-batch",
-      {
-        method:"POST",
-        body:formData
+    setMessage(""); setProgress(0); let sent = 0;
+    try {
+      for (const file of files) {
+        const formData = new FormData(); formData.append("files", file); formData.append("event_id", eventId);
+        const response = await fetch("/api/upload-batch", { method:"POST", body:formData }); const data = await response.json();
+        if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
+        sent += 1; setProgress(Math.round(sent / files.length * 100)); setMessage(`${sent} de ${files.length} fotos processadas`);
       }
-    );
-
-    const data = await response.json();
-
-
-    if(data.success){
-
-      setMessage(
-        `${data.total} fotos enviadas com sucesso!`
-      );
-
-    }else{
-
-      setMessage(
-        data.error || "Erro"
-      );
-
-    }
-
-    setLoading(false);
+      setMessage(`${sent} fotos enviadas com marca-d'água nas prévias.`); setFiles([]);
+    } catch (error) { setMessage(`${sent} enviadas. ${error instanceof Error ? error.message : "Erro no upload"}`); }
+    finally { setLoading(false); }
 
   }
 
@@ -124,27 +100,6 @@ export default function UploadPage() {
 
 
           <label className="block mb-2">
-            Slug
-          </label>
-
-          <input
-            className="
-              w-full
-              bg-neutral-800
-              rounded-lg
-              p-3
-              mb-5
-              outline-none
-            "
-            placeholder="aacrc-05072026"
-            value={slug}
-            onChange={
-              e=>setSlug(e.target.value)
-            }
-          />
-
-
-          <label className="block mb-2">
             Fotos
           </label>
 
@@ -177,6 +132,8 @@ export default function UploadPage() {
           >
             {files.length} fotos selecionadas
           </p>
+
+          {loading && <div className="mb-5 h-3 overflow-hidden rounded bg-neutral-800"><div className="h-full bg-red-600 transition-all" style={{ width: `${progress}%` }} /></div>}
 
 
           <button

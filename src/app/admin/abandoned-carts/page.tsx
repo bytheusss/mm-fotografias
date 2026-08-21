@@ -1,0 +1,6 @@
+import CartLeadActions from "@/components/admin/CartLeadActions";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+export default async function AbandonedCartsPage() {
+  const { data } = await supabaseAdmin.from("abandoned_carts").select("*").eq("status", "open").order("updated_at", { ascending: false }).limit(100);
+  return <main className="min-h-screen bg-black px-6 pb-20 pt-32 text-white"><div className="mx-auto max-w-6xl"><h1 className="text-4xl font-bold">Carrinhos para recuperar</h1><p className="mb-8 mt-2 text-neutral-400">Contatos identificados no checkout que ainda não geraram um pedido.</p><div className="space-y-3">{!data?.length && <p className="rounded-xl bg-neutral-900 p-6">Nenhum carrinho aberto.</p>}{data?.map(cart => <article key={cart.id} className="grid gap-4 rounded-xl border border-neutral-800 bg-neutral-900 p-5 md:grid-cols-[1fr_auto_auto]"><div><b>{cart.name || cart.email}</b><p className="text-sm text-neutral-400">{cart.email} · {cart.whatsapp || "sem WhatsApp"}</p></div><div><b>{cart.quantity} foto(s)</b><p className="text-sm text-neutral-400">R$ {Number(cart.estimated_total).toFixed(2).replace(".", ",")}</p></div><CartLeadActions id={cart.id} email={cart.email} whatsapp={cart.whatsapp} /></article>)}</div></div></main>;
+}

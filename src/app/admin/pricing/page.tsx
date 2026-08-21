@@ -1,0 +1,2 @@
+import PricingManager from "@/components/admin/PricingManager";
+export default function PricingPage() { return <main className="min-h-screen bg-black px-6 pb-20 pt-32 text-white"><div className="mx-auto max-w-5xl"><h1 className="mb-3 text-4xl font-bold">Pacotes e preços</h1><p className="mb-8 text-neutral-400">O servidor usa o pacote ativo com maior quantidade mínima aplicável.</p><PricingManager /></div></main>; }

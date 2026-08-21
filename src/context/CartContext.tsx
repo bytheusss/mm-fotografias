@@ -9,7 +9,7 @@ import {
 } from "react";
 
 import type { EventPhoto } from "@/types";
-import { calculatePrice } from "@/lib/pricing";
+import { calculatePrice, DEFAULT_PRICING_PACKAGES, type PricingPackage } from "@/lib/pricing";
 
 
 interface CartContextProps {
@@ -27,6 +27,7 @@ interface CartContextProps {
   clearCart: () => void;
 
   total: number;
+  pricing: ReturnType<typeof calculatePrice>;
 
   discountLabel: string;
 
@@ -61,6 +62,7 @@ export function CartProvider({
     useState<EventPhoto[]>([]);
 
   const [favorites, setFavorites] = useState<EventPhoto[]>([]);
+  const [pricingPackages, setPricingPackages] = useState<PricingPackage[]>(DEFAULT_PRICING_PACKAGES);
 
 
 
@@ -93,6 +95,8 @@ export function CartProvider({
     try { setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { localStorage.removeItem(FAVORITES_KEY); }
 
   }, []);
+
+  useEffect(() => { fetch("/api/pricing").then(response => response.json()).then(data => { if (data.packages?.length) setPricingPackages(data.packages); }).catch(() => undefined); }, []);
 
 
 
@@ -203,7 +207,7 @@ export function CartProvider({
 
 
 
-  const discountLabel = calculatePrice(items.length).label;
+  const discountLabel = calculatePrice(items.length, pricingPackages).label;
 
 
 
@@ -212,7 +216,8 @@ export function CartProvider({
 
 
 
-  const total = calculatePrice(items.length).total;
+  const total = calculatePrice(items.length, pricingPackages).total;
+  const pricing = calculatePrice(items.length, pricingPackages);
 
 
 
@@ -231,6 +236,7 @@ export function CartProvider({
         removeFromCart,
         clearCart,
         total,
+        pricing,
         discountLabel,
         favorites,
         toggleFavorite,

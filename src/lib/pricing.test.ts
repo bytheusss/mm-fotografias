@@ -13,4 +13,11 @@ describe("pricing", () => {
   it("não produz totais negativos para carrinho vazio", () => {
     expect(calculatePrice(0).total).toBe(0);
   });
+
+  it("usa pacotes configuráveis sem confiar no total do navegador", () => {
+    expect(calculatePrice(8, [
+      { minQuantity: 1, unitPrice: 15, label: "Base" },
+      { minQuantity: 8, unitPrice: 9.5, label: "Especial" },
+    ])).toMatchObject({ pricePerPhoto: 9.5, total: 76, economy: 44, label: "Especial aplicado (R$9.5 cada)" });
+  });
 });
