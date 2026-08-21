@@ -70,7 +70,7 @@ export async function POST(
     }
     // O servidor calcula o preço; nunca confia no total enviado pelo navegador.
     const pricing = calculatePrice(items.length, await getPricingPackages());
-    const coupon = await applyCoupon(couponCode, pricing.total);
+    const coupon = await applyCoupon(couponCode, pricing.total, items.map((item: { slug?: unknown }) => String(item.slug || "")));
     const total = coupon.total;
 
     const {

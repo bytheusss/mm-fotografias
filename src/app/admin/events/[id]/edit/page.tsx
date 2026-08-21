@@ -30,7 +30,8 @@ export default function EditEventPage(){
     event_date:"",
     slug:"",
     cover_image:"",
-    published:false
+    published:false,
+    share_message:""
 
   });
 
@@ -347,6 +348,8 @@ export default function EditEventPage(){
               )
             )
           }
+
+          <div><label className="mb-2 block">Mensagem padrão do WhatsApp</label><textarea name="share_message" value={form.share_message || ""} onChange={change} rows={5} maxLength={1200} placeholder="Mensagem sugerida ao compartilhar este evento" className="w-full rounded bg-neutral-800 p-3" /><p className="mt-1 text-xs text-neutral-500">O administrador ainda poderá editar antes de abrir o WhatsApp.</p></div>
 
 
 

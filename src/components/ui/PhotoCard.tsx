@@ -12,6 +12,9 @@ interface PhotoCardProps {
   sizes?: string;
   className?: string;
   onView?: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
 
@@ -22,6 +25,9 @@ export function PhotoCard({
   sizes = "(max-width: 768px) 50vw, 33vw",
   className = "aspect-square",
   onView,
+  selectionMode = false,
+  selected = false,
+  onSelect,
 }: PhotoCardProps) {
 
 
@@ -48,6 +54,8 @@ export function PhotoCard({
       onContextMenu={event => event.preventDefault()}
     >
 
+      {selectionMode && <button type="button" onClick={onSelect} aria-label={selected ? `Desmarcar foto ${photo.numero}` : `Selecionar foto ${photo.numero}`} className={`absolute left-3 top-3 z-40 grid h-10 w-10 place-items-center rounded-full border-2 text-lg font-bold ${selected ? "border-red-500 bg-red-600 text-white" : "border-white bg-black/70 text-white"}`}>{selected ? "✓" : "+"}</button>}
+
       <button
         type="button"
         aria-label={favorites.some(item => item.id === photo.id) ? "Remover dos favoritos" : "Adicionar aos favoritos"}
@@ -67,7 +75,7 @@ export function PhotoCard({
         draggable={false}
       />
 
-      {onView && <button type="button" onClick={onView} className="absolute inset-0 z-10 cursor-zoom-in" aria-label={`Ampliar foto ${photo.numero}`} />}
+      {onView && <button type="button" onClick={selectionMode ? onSelect : onView} className={`absolute inset-0 z-10 ${selectionMode ? "cursor-pointer" : "cursor-zoom-in"}`} aria-label={selectionMode ? `Selecionar foto ${photo.numero}` : `Ampliar foto ${photo.numero}`} />}
 
 
       <div className="pointer-events-none absolute inset-0 z-20 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />

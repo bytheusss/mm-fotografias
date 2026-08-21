@@ -11,6 +11,7 @@ export interface Event {
   date: string;
   photoCount: number;
   image: string;
+  shareMessage?: string | null;
 }
 
 export type PhotoStatus = "available" | "sold" | "reserved";

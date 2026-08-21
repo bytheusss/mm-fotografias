@@ -87,7 +87,8 @@ export async function PUT(
     event_date,
     slug,
     cover_image,
-    published
+    published,
+    share_message
 
   } = body;
 
@@ -105,7 +106,8 @@ export async function PUT(
         event_date,
         slug,
         cover_image,
-        published
+        published,
+        share_message: String(share_message || "").trim().slice(0, 1200) || null
 
       })
       .eq(

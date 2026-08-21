@@ -19,8 +19,8 @@ const fallbackEvents: Event[] = [
   ];
 
 export const getAllEvents = cache(async (): Promise<Event[]> => {
-  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived").eq("published", true).eq("archived", false).order("event_date", { ascending: false });
-  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image })) : fallbackEvents;
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived,share_message").eq("published", true).eq("archived", false).order("event_date", { ascending: false });
+  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message })) : fallbackEvents;
 });
 
 

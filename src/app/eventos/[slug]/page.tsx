@@ -40,7 +40,7 @@ export default async function EventoPage({
     <main className="min-h-screen bg-black text-white">
       <ViewTracker eventId={event.id} />
       <Container>
-        <section className="pb-16 pt-20">
+        <section className="pb-16 pt-32">
 
           <div className="mb-10">
 
@@ -56,7 +56,7 @@ export default async function EventoPage({
               {event.city} • {event.date}
             </p>
 
-            <EventShareTools title={event.name} />
+            <EventShareTools title={event.name} initialMessage={event.shareMessage} />
 
           </div>
 

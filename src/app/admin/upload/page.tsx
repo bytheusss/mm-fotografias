@@ -28,13 +28,14 @@ export default function UploadPage() {
     try {
       for (const file of files) {
         setMessage(`${sent} de ${files.length} · preparando ${file.name}`);
-        const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type }), signal: AbortSignal.timeout(30000) });
+        const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); const checksum = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
+        const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type, checksum }), signal: AbortSignal.timeout(30000) });
         const signed = await signedResponse.json().catch(() => ({})); if (!signedResponse.ok) throw new Error(signed.error || `Erro ao preparar ${file.name}`);
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
         const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
         if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
-        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path }), signal: AbortSignal.timeout(90000) });
+        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum }), signal: AbortSignal.timeout(90000) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
         sent += 1; setProgress(Math.round(sent / files.length * 100)); setMessage(`${sent} de ${files.length} fotos processadas`);
       }

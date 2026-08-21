@@ -65,7 +65,7 @@ export default function CheckoutPage() {
 
   async function validateCoupon() {
     setCouponMessage("");
-    const response = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponCode, quantity: items.length }) });
+    const response = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: couponCode, quantity: items.length, eventSlugs: items.map(item => item.slug) }) });
     const data = await response.json();
     if (!response.ok) { setCouponDiscount(0); setCouponMessage(data.error || "Cupom inválido"); return; }
     setCouponDiscount(Number(data.discount || 0));
@@ -191,6 +191,11 @@ export default function CheckoutPage() {
     }
 
 
+  }
+
+  async function abrirCheckoutCompleto() {
+    setErrorMessage(""); if (!items.length || !name.trim() || !email.trim()) { setErrorMessage("Preencha nome, e-mail e itens do carrinho."); return; }
+    setLoading(true); try { const response = await fetch("/api/payment/checkout-pro", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, whatsapp, items, couponCode }) }); const data = await response.json().catch(() => ({})); if (!response.ok || !data.checkout_url) throw new Error(data.error || "Checkout indisponível."); window.location.assign(data.checkout_url); } catch (error) { setErrorMessage(error instanceof Error ? error.message : "Erro ao abrir pagamento."); setLoading(false); }
   }
 
 
@@ -487,11 +492,23 @@ export default function CheckoutPage() {
 
               <>{errorMessage && <p role="alert" className="mb-4 rounded-lg bg-red-950 p-3 text-sm text-red-200">{errorMessage}</p>}<Button
 
-                onClick={gerarPix}
+                onClick={abrirCheckoutCompleto}
 
                 disabled={loading}
 
                 className="mt-8 w-full bg-red-600 hover:bg-red-700"
+
+              >
+
+                {loading ? "Abrindo pagamento…" : "Pagar com cartão ou Mercado Pago"}
+
+              </Button><p className="mt-3 text-center text-xs text-neutral-500">Cartão de crédito, saldo Mercado Pago e demais opções habilitadas na sua conta.</p><Button
+
+                onClick={gerarPix}
+
+                disabled={loading}
+
+                className="mt-3 w-full bg-neutral-700 hover:bg-neutral-600"
 
               >
 

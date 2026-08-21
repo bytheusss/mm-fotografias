@@ -35,6 +35,7 @@ export async function GET(
       { status: 403 }
     );
   }
+  if (order.download_expires_at && new Date(order.download_expires_at) < new Date()) return NextResponse.json({ error: "Link expirado. Solicite um novo acesso." }, { status: 410 });
 
   let photos: Array<{ numero?: string | number; imagem?: string }> = [];
   try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }
@@ -82,6 +83,7 @@ export async function GET(
 
   const blob =
     await imageResponse.blob();
+  await supabaseAdmin.from("orders").update({ download_count: Number(order.download_count || 0) + 1 }).eq("id", order.id);
 
   return new NextResponse(blob, {
     headers: {
