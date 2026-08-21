@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function UploadPage() {
 
@@ -26,13 +27,19 @@ export default function UploadPage() {
     setMessage(""); setProgress(0); let sent = 0;
     try {
       for (const file of files) {
-        const formData = new FormData(); formData.append("files", file); formData.append("event_id", eventId);
-        const response = await fetch("/api/upload-batch", { method:"POST", body:formData }); const data = await response.json();
-        if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
+        setMessage(`${sent} de ${files.length} · preparando ${file.name}`);
+        const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type }), signal: AbortSignal.timeout(30000) });
+        const signed = await signedResponse.json().catch(() => ({})); if (!signedResponse.ok) throw new Error(signed.error || `Erro ao preparar ${file.name}`);
+        setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
+        const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
+        if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
+        setMessage(`${sent} de ${files.length} · processando ${file.name}`);
+        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path }), signal: AbortSignal.timeout(90000) });
+        const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
         sent += 1; setProgress(Math.round(sent / files.length * 100)); setMessage(`${sent} de ${files.length} fotos processadas`);
       }
       setMessage(`${sent} fotos enviadas com marca-d'água nas prévias.`); setFiles([]);
-    } catch (error) { setMessage(`${sent} enviadas. ${error instanceof Error ? error.message : "Erro no upload"}`); }
+    } catch (error) { setFiles(current => current.slice(sent)); setMessage(`${sent} enviadas. Restantes mantidas para tentar novamente. ${error instanceof Error ? error.message : "Erro no upload"}`); }
     finally { setLoading(false); }
 
   }
