@@ -17,7 +17,7 @@ export function GalleryLightbox({ photos, index, onIndexChange, onClose }: { pho
     <button type="button" onClick={event => { event.stopPropagation(); next(); }} className="absolute right-3 top-1/2 z-30 grid h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-black/70 text-3xl text-white hover:bg-red-700 md:right-[330px]" aria-label="Próxima foto">›</button>
     <div className="grid h-full w-full grid-rows-[minmax(0,1fr)_auto] md:grid-cols-[1fr_310px] md:grid-rows-1" onClick={event => event.stopPropagation()}>
       <div className="group relative min-h-0 overflow-hidden" onContextMenu={event => event.preventDefault()}>
-        <Image key={photo.id} src={photo.imagem} alt={`Foto ${photo.numero} — ${photo.evento}`} fill priority draggable={false} sizes="(max-width: 768px) 100vw, calc(100vw - 310px)" className="select-none object-contain transition-transform duration-500 ease-out group-hover:scale-[1.06]" />
+        <Image key={photo.id} src={photo.imagem} alt={`Foto ${photo.numero} — ${photo.evento}`} fill priority draggable={false} sizes="(max-width: 768px) 100vw, calc(100vw - 310px)" className="select-none object-contain" />
         <div className="absolute inset-0 z-10 select-none" aria-hidden="true" />
         <div className="absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-sm text-white">{index + 1} / {photos.length}</div>
       </div>

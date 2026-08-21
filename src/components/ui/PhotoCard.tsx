@@ -67,8 +67,10 @@ export function PhotoCard({
         draggable={false}
       />
 
+      {onView && <button type="button" onClick={onView} className="absolute inset-0 z-10 cursor-zoom-in" aria-label={`Ampliar foto ${photo.numero}`} />}
 
-      <div className="absolute inset-0 z-20 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />
+
+      <div className="pointer-events-none absolute inset-0 z-20 bg-black/0 transition-colors duration-500 group-hover:bg-black/50" />
 
 
 
