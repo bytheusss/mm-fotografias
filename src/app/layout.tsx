@@ -23,6 +23,7 @@ const geistMono = Geist_Mono({
 
 
 export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
   icons: { icon: "/images/logo.png", shortcut: "/images/logo.png", apple: "/images/logo.png" },
   title: {
     default: SITE.name,

@@ -12,6 +12,8 @@ import { EventShareTools } from "@/components/event/EventShareTools";
 import { ViewTracker } from "@/components/analytics/ViewTracker";
 import { EventPasswordGate } from "@/components/event/EventPasswordGate";
 import { hasEventAccess } from "@/lib/event-access";
+import type { Metadata } from "next";
+import { SITE } from "@/lib/constants/site";
 
 export const revalidate = 300;
 
@@ -24,6 +26,8 @@ interface PageProps {
 export async function generateStaticParams() {
   return (await getAllEvents()).map(event => ({ slug: event.slug }));
 }
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> { const { slug } = await params; const event = await getEventBySlug(slug); if (!event) return {}; const description = `Encontre e compre suas fotos do evento ${event.name}, realizado em ${event.city} em ${event.date}.`; const privateAlbum = event.accessMode !== "public"; return { title: event.name, description, alternates: { canonical: `/eventos/${event.slug}` }, robots: privateAlbum ? { index: false, follow: false } : undefined, openGraph: { title: `${event.name} | ${SITE.name}`, description, url: `/eventos/${event.slug}`, images: event.image ? [{ url: event.image, alt: event.name }] : undefined, type: "website" }, twitter: { card: "summary_large_image", title: event.name, description, images: event.image ? [event.image] : undefined } }; }
 
 export default async function EventoPage({
   params,

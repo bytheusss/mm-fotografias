@@ -8,9 +8,8 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getApiUser } from "@/lib/api-auth";
 import { sendPurchaseEmail } from "@/lib/email";
-import { calculatePrice } from "@/lib/pricing";
 import { applyCoupon } from "@/lib/coupons";
-import { getPricingPackages } from "@/lib/pricing-server";
+import { getCartPricing } from "@/lib/pricing-server";
 import { checkRateLimit, requestKey } from "@/lib/rate-limit";
 
 
@@ -69,7 +68,7 @@ export async function POST(
       return NextResponse.json({ error: "Use o e-mail da sua conta ou saia para comprar como visitante." }, { status: 400 });
     }
     // O servidor calcula o preço; nunca confia no total enviado pelo navegador.
-    const pricing = calculatePrice(items.length, await getPricingPackages());
+    const pricing = await getCartPricing(items);
     const coupon = await applyCoupon(couponCode, pricing.total, items.map((item: { slug?: unknown }) => String(item.slug || "")));
     const total = coupon.total;
 

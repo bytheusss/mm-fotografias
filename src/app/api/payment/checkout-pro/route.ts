@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getApiUser } from "@/lib/api-auth";
-import { calculatePrice } from "@/lib/pricing";
 import { applyCoupon } from "@/lib/coupons";
-import { getPricingPackages } from "@/lib/pricing-server";
+import { getCartPricing } from "@/lib/pricing-server";
 import { checkRateLimit, requestKey } from "@/lib/rate-limit";
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN! });
@@ -15,7 +14,7 @@ export async function POST(request: Request) {
     const body = await request.json(); const items = Array.isArray(body.items) ? body.items : []; const email = String(body.email || "").trim().toLowerCase(); const name = String(body.name || "").trim();
     if (!name || !/^\S+@\S+\.\S+$/.test(email) || !items.length || items.length > 100) return NextResponse.json({ error: "Confira nome, e-mail e itens do carrinho." }, { status: 400 });
     const user = await getApiUser(); if (user?.email && user.email.toLowerCase() !== email) return NextResponse.json({ error: "Use o e-mail da sua conta." }, { status: 400 });
-    const pricing = calculatePrice(items.length, await getPricingPackages()); const coupon = await applyCoupon(body.couponCode, pricing.total, items.map((item: { slug?: unknown }) => String(item.slug || ""))); const total = coupon.total;
+    const pricing = await getCartPricing(items); const coupon = await applyCoupon(body.couponCode, pricing.total, items.map((item: { slug?: unknown }) => String(item.slug || ""))); const total = coupon.total;
     const { data: order, error } = await supabaseAdmin.from("orders").insert({ name, email, whatsapp: String(body.whatsapp || ""), photos: items, total, coupon_code: coupon.code, discount_amount: coupon.discount, status: "pending", user_id: user?.id || null }).select("id").single();
     if (error || !order) throw error || new Error("Pedido não criado");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;

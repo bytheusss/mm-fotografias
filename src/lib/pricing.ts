@@ -20,10 +20,10 @@ export function packageLabel(quantity: number) {
   return "";
 }
 
-export function calculatePrice(quantity: number, packages: PricingPackage[] = DEFAULT_PRICING_PACKAGES) {
+export function calculatePrice(quantity: number, packages: PricingPackage[] = DEFAULT_PRICING_PACKAGES, basePrice = BASE_PHOTO_PRICE) {
   const selected = [...packages].filter(item => item.minQuantity <= quantity).sort((a, b) => b.minQuantity - a.minQuantity)[0];
-  const pricePerPhoto = selected?.unitPrice ?? BASE_PHOTO_PRICE;
-  const subtotal = quantity * BASE_PHOTO_PRICE;
+  const pricePerPhoto = selected?.unitPrice ?? basePrice;
+  const subtotal = quantity * basePrice;
   const total = quantity * pricePerPhoto;
   const label = selected && selected.minQuantity > 1 ? `${selected.label} aplicado (R$${pricePerPhoto} cada)` : "";
   return { pricePerPhoto, subtotal, total, economy: subtotal - total, label };

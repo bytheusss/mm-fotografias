@@ -63,6 +63,7 @@ export function CartProvider({
 
   const [favorites, setFavorites] = useState<EventPhoto[]>([]);
   const [pricingPackages, setPricingPackages] = useState<PricingPackage[]>(DEFAULT_PRICING_PACKAGES);
+  const [eventPricing, setEventPricing] = useState<Record<string, PricingPackage[]>>({});
 
 
 
@@ -97,6 +98,8 @@ export function CartProvider({
   }, []);
 
   useEffect(() => { fetch("/api/pricing").then(response => response.json()).then(data => { if (data.packages?.length) setPricingPackages(data.packages); }).catch(() => undefined); }, []);
+  const eventIdsKey = [...new Set(items.map(item => item.eventId).filter(Boolean))].sort().join(",");
+  useEffect(() => { if (!eventIdsKey) { const timer = window.setTimeout(() => setEventPricing({}), 0); return () => window.clearTimeout(timer); } fetch(`/api/pricing?eventIds=${encodeURIComponent(eventIdsKey)}`).then(response => response.json()).then(data => setEventPricing(data.eventPackages || {})).catch(() => undefined); }, [eventIdsKey]);
 
 
 
@@ -207,17 +210,11 @@ export function CartProvider({
 
 
 
-  const discountLabel = calculatePrice(items.length, pricingPackages).label;
-
-
-
-
-
-
-
-
-  const total = calculatePrice(items.length, pricingPackages).total;
-  const pricing = calculatePrice(items.length, pricingPackages);
+  const groups = Object.values(items.reduce<Record<string, EventPhoto[]>>((result, item) => { const key = item.eventId || item.slug; (result[key] ||= []).push(item); return result; }, {}));
+  const groupPrices = groups.map(group => calculatePrice(group.length, eventPricing[group[0].eventId || ""] || pricingPackages, Number(group[0].preco || 15)));
+  const pricing = { pricePerPhoto: items.length ? groupPrices.reduce((sum, value) => sum + value.total, 0) / items.length : 0, subtotal: groupPrices.reduce((sum, value) => sum + value.subtotal, 0), total: groupPrices.reduce((sum, value) => sum + value.total, 0), economy: groupPrices.reduce((sum, value) => sum + value.economy, 0), label: groupPrices.map(value => value.label).filter(Boolean).join(" · ") };
+  const discountLabel = pricing.label;
+  const total = pricing.total;
 
 
 

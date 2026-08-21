@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import EventPricingManager from "@/components/admin/EventPricingManager";
 
 
 export default function EditEventPage(){
@@ -572,6 +573,8 @@ export default function EditEventPage(){
 
 
           </button>
+
+          <EventPricingManager eventId={id} />
 
 
 
