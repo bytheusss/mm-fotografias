@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { auditAdmin } from "@/lib/audit";
 
 export async function GET() {
   const { data, error } = await supabaseAdmin.from("pricing_packages").select("*").order("min_quantity");
@@ -13,5 +14,7 @@ export async function POST(request: Request) {
   const label = String(body.label || "").trim();
   if (minQuantity < 1 || unitPrice <= 0 || !label) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   const { data, error } = await supabaseAdmin.from("pricing_packages").upsert({ min_quantity: minQuantity, unit_price: unitPrice, label, active: body.active !== false }, { onConflict: "min_quantity" }).select().single();
-  return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json(data);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  await auditAdmin("upsert", "pricing_package", String(data.id), { minQuantity, unitPrice });
+  return NextResponse.json(data);
 }

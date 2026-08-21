@@ -8,6 +8,8 @@ import {
 
 import { Container } from "@/components/ui/Container";
 import { PhotoSearch } from "@/components/event/PhotoSearch";
+import { EventShareTools } from "@/components/event/EventShareTools";
+import { ViewTracker } from "@/components/analytics/ViewTracker";
 
 export const revalidate = 300;
 
@@ -36,6 +38,7 @@ export default async function EventoPage({
 
   return (
     <main className="min-h-screen bg-black text-white">
+      <ViewTracker eventId={event.id} />
       <Container>
         <section className="pb-16 pt-20">
 
@@ -52,6 +55,8 @@ export default async function EventoPage({
             <p className="mt-3 text-gray-400">
               {event.city} • {event.date}
             </p>
+
+            <EventShareTools title={event.name} />
 
           </div>
 

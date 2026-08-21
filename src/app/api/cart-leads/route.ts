@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { calculatePrice } from "@/lib/pricing";
 import { getPricingPackages } from "@/lib/pricing-server";
+import { checkRateLimit, requestKey } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit(requestKey(request, "cart-lead"), 10, 60 * 60 * 1000);
+  if (!rate.allowed) return NextResponse.json({ error: "Muitas tentativas. Aguarde e tente novamente." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter) } });
   const body = await request.json();
   const email = String(body.email || "").trim().toLowerCase();
   const items = Array.isArray(body.items) ? body.items.slice(0, 100) : [];

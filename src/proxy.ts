@@ -18,6 +18,10 @@ export async function proxy(request: NextRequest) {
     },
   );
   await supabase.auth.getUser();
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("X-Frame-Options", "DENY");
   if (request.nextUrl.pathname.startsWith("/api/admin") || request.nextUrl.pathname === "/api/upload" || request.nextUrl.pathname === "/api/upload-batch") {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });

@@ -10,24 +10,25 @@ interface PhotoSearchProps {
 
 export function PhotoSearch({ photos }: PhotoSearchProps) {
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"asc" | "desc">("asc");
 
   const filteredPhotos = useMemo(() => {
     const value = search.replace(/\D/g, "");
 
     if (!value) {
-      return photos;
+      return [...photos].sort((a, b) => sort === "asc" ? Number(a.numero) - Number(b.numero) : Number(b.numero) - Number(a.numero));
     }
 
     return photos.filter((photo) => {
       const number = String(photo.numero).padStart(4, "0");
 
       return number.includes(value.padStart(4, "0"));
-    });
-  }, [photos, search]);
+    }).sort((a, b) => sort === "asc" ? Number(a.numero) - Number(b.numero) : Number(b.numero) - Number(a.numero));
+  }, [photos, search, sort]);
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row">
         <input
           type="text"
           inputMode="numeric"
@@ -51,6 +52,7 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
             focus:outline-none
           "
         />
+        <select aria-label="Ordenação das fotos" value={sort} onChange={e => setSort(e.target.value as "asc" | "desc")} className="rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-white"><option value="asc">Número crescente</option><option value="desc">Número decrescente</option></select>
       </div>
 
       {filteredPhotos.length === 0 ? (

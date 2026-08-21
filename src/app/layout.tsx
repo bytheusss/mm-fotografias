@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { PromoBanner } from "@/components/layout/PromoBanner";
 import { SITE } from "@/lib/constants/site";
 import { CartProvider } from "@/context/CartContext";
 
@@ -66,6 +67,7 @@ export default function RootLayout({
         <CartProvider>
 
           <Navbar />
+          <PromoBanner />
 
           <main className="flex-1">
             {children}

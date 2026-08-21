@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { auditAdmin } from "@/lib/audit";
 
 export async function GET() {
   const { data, error } = await supabaseAdmin.from("events").select("id,name,slug,event_date,archived").order("event_date", { ascending: false });
@@ -12,5 +13,7 @@ export async function POST(request: Request) {
   const baseSlug = `${name}-${eventDate}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); let slug = baseSlug; let suffix = 2;
   while ((await supabaseAdmin.from("events").select("id").eq("slug", slug).maybeSingle()).data) slug = `${baseSlug}-${suffix++}`;
   const { data, error } = await supabaseAdmin.from("events").insert({ name, city, event_date: eventDate, slug, folder: slug, cover_image: body.cover_image || null, published: Boolean(body.published), total_photos: 0 }).select("id,slug").single();
-  return error ? NextResponse.json({ error: error.code === "23505" ? "Esse slug já está em uso" : error.message }, { status: 400 }) : NextResponse.json({ success: true, event: data });
+  if (error) return NextResponse.json({ error: error.code === "23505" ? "Esse slug já está em uso" : error.message }, { status: 400 });
+  await auditAdmin("create", "event", String(data.id), { name, slug, published: Boolean(body.published) });
+  return NextResponse.json({ success: true, event: data });
 }

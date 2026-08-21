@@ -11,6 +11,7 @@ import { sendPurchaseEmail } from "@/lib/email";
 import { calculatePrice } from "@/lib/pricing";
 import { applyCoupon } from "@/lib/coupons";
 import { getPricingPackages } from "@/lib/pricing-server";
+import { checkRateLimit, requestKey } from "@/lib/rate-limit";
 
 
 const client = new MercadoPagoConfig({
@@ -22,6 +23,9 @@ const client = new MercadoPagoConfig({
 export async function POST(
   request: Request
 ) {
+
+  const rate = checkRateLimit(requestKey(request, "payment"), 5, 10 * 60 * 1000);
+  if (!rate.allowed) return NextResponse.json({ error: "Muitas tentativas de pagamento. Aguarde alguns minutos." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter) } });
 
   try {
 
