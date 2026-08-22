@@ -8,6 +8,7 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Sobre", href: "/#sobre" },
   { label: "Contato", href: "/#contato" },
   { label: "FAQ", href: "/#faq" },
+  { label: "Ajuda", href: "/ajuda" },
 ];
 
 export const FOOTER_LINKS: NavLink[] = [
@@ -18,6 +19,7 @@ export const FOOTER_LINKS: NavLink[] = [
   { label: "Sobre", href: "/#sobre" },
   { label: "Contato", href: "/#contato" },
   { label: "FAQ", href: "#faq" },
+  { label: "Central de Ajuda", href: "/ajuda" },
   { label: "Política de Privacidade", href: "/privacidade" },
   { label: "Termos de Uso e Compra", href: "/termos" },
 ];
