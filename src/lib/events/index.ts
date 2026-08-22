@@ -187,18 +187,15 @@ export const getEventPhoto = cache(
 export async function getFeaturedPhotos(
   limit = 6
 ): Promise<EventPhoto[]> {
+  const events = await getAllEvents();
+  const featured: EventPhoto[] = [];
 
+  for (const event of events.slice(0, 5)) {
+    const photos = await getEventPhotos(event.slug);
+    featured.push(...photos.slice(0, Math.max(0, limit - featured.length)));
+    if (featured.length >= limit) break;
+  }
 
-  const photos =
-    await getEventPhotos(
-      "aacrc-05072026"
-    );
-
-
-
-  return photos.slice(
-    0,
-    limit
-  );
+  return featured;
 
 }
