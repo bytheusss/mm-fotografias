@@ -2,6 +2,7 @@ import { TESTIMONIALS } from "@/lib/constants/mock-data";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -22,7 +23,9 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-export function Testimonials() {
+export async function Testimonials() {
+  const { data } = await supabaseAdmin.from("purchase_reviews").select("id,customer_name,comment,rating").eq("target_type", "studio").eq("published", true).order("created_at", { ascending: false }).limit(6);
+  const testimonials = data?.length ? data.map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada" })) : TESTIMONIALS;
   return (
     <section className="bg-background py-20 md:py-28">
       <Container>
@@ -32,7 +35,7 @@ export function Testimonials() {
         />
 
         <div className="grid gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((testimonial) => (
+          {testimonials.map((testimonial) => (
             <Card key={testimonial.id} hover className="flex flex-col">
               <StarRating rating={testimonial.rating} />
               <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-muted sm:text-base">

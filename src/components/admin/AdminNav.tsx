@@ -8,7 +8,7 @@ const groups = [
   ["GERAL", [["⌂", "Visão geral", "/admin"], ["◉", "Métricas", "/admin/analytics"]]],
   ["CONTEÚDO", [["▣", "Eventos", "/admin/events"], ["↑", "Upload", "/admin/upload"], ["♟", "Fotógrafos", "/admin/collaborators"], ["◆", "Estúdio da equipe", "/admin/creator-ops"], ["▥", "Relatório da equipe", "/admin/photographer-report"], ["⇩", "CSV da equipe", "/api/admin/reports/photographers.csv"], ["♜", "Equipe", "/admin/team"]]],
   ["VENDAS", [["▤", "Pedidos", "/admin/orders"], ["◴", "Carrinhos", "/admin/abandoned-carts"], ["↗", "Financeiro", "/admin/finance"], ["◎", "Repasses", "/admin/payouts"]]],
-  ["MARKETING", [["$", "Pacotes", "/admin/pricing"], ["%", "Cupons", "/admin/coupons"], ["★", "Promoção", "/admin/promotion"]]],
+  ["MARKETING", [["$", "Pacotes", "/admin/pricing"], ["%", "Cupons", "/admin/coupons"], ["★", "Promoção", "/admin/promotion"], ["✦", "Avaliações", "/admin/reviews"]]],
   ["SISTEMA", [["!", "Central operacional", "/admin/system-health"], ["♲", "Lixeira", "/admin/trash"], ["◈", "LGPD", "/admin/privacy"], ["≡", "Auditoria", "/admin/audit"], ["⇩", "Backup de configurações", "/api/admin/reports/settings.json"], ["⚙", "Integrações", "/admin/integrations"]]],
 ] as const;
 
