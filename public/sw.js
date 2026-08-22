@@ -1,5 +1,7 @@
-const CACHE = "mm-fotografias-v11";
+const CACHE = "mm-fotografias-v14";
 const STATIC = ["/", "/offline", "/eventos", "/manifest.webmanifest", "/images/logo.png"];
 self.addEventListener("install", event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", event => { if (event.request.method !== "GET" || new URL(event.request.url).origin !== location.origin || event.request.url.includes("/api/")) return; event.respondWith(fetch(event.request).then(response => { if (response.ok && event.request.destination !== "document") caches.open(CACHE).then(cache => cache.put(event.request, response.clone())); return response; }).catch(() => caches.match(event.request).then(cached => cached || (event.request.mode === "navigate" ? caches.match("/offline") : undefined)))); });
+self.addEventListener("push",event=>{const data=event.data?.json()||{};event.waitUntil(self.registration.showNotification(data.title||"M&M Fotografias",{body:data.body||"Você tem uma novidade.",icon:"/images/logo.png",badge:"/images/logo.png",data:{href:data.href||"/minha-conta"}}))});
+self.addEventListener("notificationclick",event=>{event.notification.close();event.waitUntil(clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{const href=event.notification.data?.href||"/";const open=list.find(client=>"focus"in client);return open?open.focus().then(()=>open.navigate(href)):clients.openWindow(href)}))});

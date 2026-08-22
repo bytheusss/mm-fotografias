@@ -6,8 +6,9 @@ import { PhotoCard } from "@/components/ui/PhotoCard";
 export default function FavoritesPage() {
   const { favorites, items, addToCart } = useCart();
   const missing = favorites.filter(photo => !items.some(item => item.id === photo.id));
+  const groups = Object.entries(favorites.reduce<Record<string,typeof favorites>>((result,photo)=>{const key=photo.evento||"Outras fotos";(result[key]||=[]).push(photo);return result},{}));
   return <main className="min-h-screen bg-black px-6 pb-20 pt-32 text-white"><div className="mx-auto max-w-6xl">
     <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-4xl font-bold">Favoritos</h1><p className="mt-2 text-neutral-400">Compare suas escolhas e compre todas de uma vez.</p></div>{favorites.length>0&&<button type="button" disabled={!missing.length} onClick={()=>missing.forEach(addToCart)} className="rounded-lg bg-red-600 px-5 py-3 font-bold disabled:bg-neutral-700">{missing.length?`Adicionar ${missing.length} ao carrinho`:"Todas no carrinho ✓"}</button>}</div>
-    {!favorites.length ? <p className="mt-8 text-neutral-400">Você ainda não favoritou nenhuma foto.</p> : <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-4">{favorites.map(photo => <PhotoCard key={photo.id} photo={photo} />)}</div>}
+    {!favorites.length ? <p className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900 p-6 text-neutral-400">Você ainda não favoritou nenhuma foto. Use o coração nas galerias para montar sua seleção.</p> : <div className="mt-8 space-y-10">{groups.map(([event,photos])=><section key={event}><div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-black">{event}</h2><span className="rounded-full bg-neutral-900 px-3 py-1 text-sm text-neutral-400">{photos.length} foto(s)</span></div><div className="grid grid-cols-2 gap-4 md:grid-cols-4">{photos.map(photo=><PhotoCard key={photo.id} photo={photo}/>)}</div></section>)}</div>}
   </div></main>;
 }

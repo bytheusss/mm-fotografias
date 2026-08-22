@@ -23,23 +23,23 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-type Testimonial = { id: string | number; name: string; content: string; rating: number; role: string };
+type Testimonial = { id: string | number; name: string; content: string; rating: number; role: string; response?: string | null };
 
 function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return <Card hover className="flex flex-col">
     <StarRating rating={testimonial.rating} />
     <blockquote className="mt-4 flex-1 text-sm leading-relaxed text-muted sm:text-base">&ldquo;{testimonial.content}&rdquo;</blockquote>
-    <footer className="mt-6 border-t border-border pt-4"><p className="font-medium text-foreground">{testimonial.name}</p><p className="text-sm text-muted">{testimonial.role}</p></footer>
+    <footer className="mt-6 border-t border-border pt-4"><p className="font-medium text-foreground">{testimonial.name}</p><p className="text-sm text-muted">{testimonial.role}</p>{testimonial.response&&<div className="mt-4 rounded-lg border-l-2 border-primary bg-background-secondary p-3 text-sm"><b>Resposta da M&M</b><p className="mt-1 text-muted">{testimonial.response}</p></div>}</footer>
   </Card>;
 }
 
 export async function Testimonials() {
-  const { data } = await supabaseAdmin.from("purchase_reviews").select("id,customer_name,comment,rating").eq("target_type", "studio").eq("published", true).order("created_at", { ascending: false }).limit(6);
+  const { data } = await supabaseAdmin.from("purchase_reviews").select("id,customer_name,comment,rating,response_text,featured,created_at").eq("target_type", "studio").eq("published", true).order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(12);
   const curated = [
     { id: "curated-maique", name: "Maíque", content: "Atendimento excelente e fotos com muita qualidade. Todo o processo foi simples, rápido e bem organizado.", rating: 5, role: "Cliente" },
     { id: "curated-ana-clara", name: "Ana Clara", content: "Amei o resultado das fotos! Um trabalho muito caprichado e uma experiência incrível do começo ao fim.", rating: 5, role: "Cliente" },
   ];
-  const verified = (data || []).map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada" }));
+  const verified = (data || []).map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada",response:item.response_text }));
   const testimonials = [...verified, ...curated, ...TESTIMONIALS] as Testimonial[];
   const featured = testimonials.slice(0, 3);
   const remaining = testimonials.slice(3);

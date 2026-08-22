@@ -6,7 +6,7 @@ import { SafeImage } from "@/components/ui/SafeImage";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen items-center">
+    <section className="relative flex min-h-[100svh] items-center overflow-hidden">
       <SafeImage
         src={IMAGE_PATHS.hero}
         fallbackSrc={IMAGE_PATHS.heroFallback}
@@ -16,15 +16,15 @@ export function Hero() {
         className="object-cover"
         sizes="100vw"
       />
-      <div className="absolute inset-0 bg-background/70" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+      <div className="absolute inset-0 bg-background/75 sm:bg-background/65" />
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/20" />
 
       <Container className="relative z-10 pt-20">
         <div className="max-w-3xl">
           <p className="opacity-0-initial animate-fade-in text-sm font-medium uppercase tracking-[0.2em] text-primary">
             {SITE.name}
           </p>
-          <h1 className="opacity-0-initial animate-slide-up animation-delay-100 mt-4 text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+          <h1 className="opacity-0-initial animate-slide-up animation-delay-100 mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             {SITE.slogan}
           </h1>
           <p className="opacity-0-initial animate-slide-up animation-delay-200 mt-6 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
@@ -38,6 +38,7 @@ export function Hero() {
               Últimos Eventos
             </Button>
           </div>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium uppercase tracking-wider text-neutral-400"><span>✓ Compra segura</span><span>✓ Alta resolução</span><span>✓ Download imediato</span></div>
         </div>
       </Container>
 

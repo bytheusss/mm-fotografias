@@ -14,6 +14,7 @@ import { EventPasswordGate } from "@/components/event/EventPasswordGate";
 import { hasEventAccess } from "@/lib/event-access";
 import type { Metadata } from "next";
 import { SITE } from "@/lib/constants/site";
+import { EventFollowButton } from "@/components/event/EventFollowButton";
 
 export const revalidate = 300;
 
@@ -64,6 +65,7 @@ export default async function EventoPage({
             </p>
 
             <EventShareTools title={event.name} initialMessage={event.shareMessage} />
+            <div className="mt-3"><EventFollowButton eventId={event.id} /></div>
             {event.salesPaused && <div className="mt-6 rounded-xl border border-yellow-700 bg-yellow-950/50 p-4 font-semibold text-yellow-200">Vendas temporariamente pausadas. Você ainda pode visualizar e favoritar as fotos.</div>}
 
           </div>

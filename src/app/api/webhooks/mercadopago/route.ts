@@ -9,6 +9,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { sendPurchaseEmail } from "@/lib/email";
 import { sendWhatsApp } from "@/lib/whatsapp";
+import { sendPush } from "@/lib/push";
 
 
 const client = new MercadoPagoConfig({
@@ -167,7 +168,7 @@ export async function POST(
     } =
       await supabaseAdmin
       .from("orders")
-      .select("download_token,status,email,name,whatsapp,total,paid_email_sent_at")
+      .select("download_token,status,email,name,whatsapp,total,paid_email_sent_at,user_id")
       .eq(
         "id",
         externalReference
@@ -235,6 +236,7 @@ export async function POST(
 
     if (!error && order && order.status !== "paid") {
       await sendWhatsApp({ to: order.whatsapp, text: `Pagamento confirmado! Seu pedido #${String(externalReference).slice(0,8).toUpperCase()} está disponível em ${process.env.NEXT_PUBLIC_SITE_URL}/download/${token}` }).catch(whatsappError => console.error("WHATSAPP ERROR", whatsappError));
+      if(order.user_id){const notice={title:"Pagamento confirmado 🎉",body:`Seu pedido #${String(externalReference).slice(0,8).toUpperCase()} já está disponível para download.`,href:`/minha-conta/pedido/${externalReference}`};await supabaseAdmin.from("client_notifications").insert({user_id:order.user_id,...notice});await sendPush(order.user_id,notice).catch(pushError=>console.error("PUSH ERROR",pushError))}
     }
 
 

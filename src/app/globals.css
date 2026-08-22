@@ -64,9 +64,15 @@ body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
+::selection { background: #dc2626; color: #fff; }
+:focus-visible { outline: 2px solid #ef4444; outline-offset: 3px; }
+html { scrollbar-color: #525252 #0b0c0e; }
+img { -webkit-user-drag: none; }
+
 button, a, input, select, textarea { touch-action: manipulation; }
 
 @media (max-width: 639px) {
+  body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
   .admin-content main {
     padding-top: calc(7rem + env(safe-area-inset-top)) !important;
     padding-right: 1rem !important;
@@ -79,6 +85,10 @@ button, a, input, select, textarea { touch-action: manipulation; }
   .admin-content form, .admin-content section, .admin-content article { max-width: 100%; }
   .admin-content input, .admin-content select, .admin-content textarea, .admin-content button { min-width: 0; max-width: 100%; }
   .admin-content table { font-size: .875rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
 @supports (padding: max(0px)) {

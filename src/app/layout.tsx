@@ -9,6 +9,7 @@ import { CartProvider } from "@/context/CartContext";
 import { CookiePreferences } from "@/components/privacy/CookiePreferences";
 import { AppExperience } from "@/components/layout/AppExperience";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { PushNotifications } from "@/components/layout/PushNotifications";
 
 import "./globals.css";
 
@@ -83,6 +84,7 @@ export default function RootLayout({
           <CookiePreferences />
           <AppExperience />
           <MobileBottomNav />
+          <PushNotifications />
 
         </CartProvider>
 
