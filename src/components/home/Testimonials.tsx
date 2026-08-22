@@ -1,3 +1,4 @@
+import { TESTIMONIALS } from "@/lib/constants/mock-data";
 import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
@@ -29,7 +30,7 @@ export async function Testimonials() {
     { id: "curated-ana-clara", name: "Ana Clara", content: "Amei o resultado das fotos! Um trabalho muito caprichado e uma experiência incrível do começo ao fim.", rating: 5, role: "Cliente" },
   ];
   const verified = (data || []).map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada" }));
-  const testimonials = [...curated, ...verified].slice(0, 6);
+  const testimonials = [...TESTIMONIALS, ...curated, ...verified];
   return (
     <section className="bg-background py-20 md:py-28">
       <Container>
