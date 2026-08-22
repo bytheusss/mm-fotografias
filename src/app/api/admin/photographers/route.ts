@@ -5,7 +5,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("id,email,full_name,commission_rate")
-    .eq("role", "photographer")
+    .contains("roles", ["photographer"])
     .order("full_name");
 
   return error

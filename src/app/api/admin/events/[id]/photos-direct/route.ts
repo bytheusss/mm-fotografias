@@ -22,7 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params; const { path, checksum, photographerId, category } = await request.json();
   if (!(await canUploadEvent(id))) return NextResponse.json({ error: "Sem permissão para enviar neste evento." }, { status: 403 });
   const { data: event } = await supabaseAdmin.from("events").select("slug,base_price").eq("id", id).maybeSingle();
-  const staff = await getStaffUser(); let authorId: string | null = staff?.role === "photographer" ? staff.user.id : null;
+  const staff = await getStaffUser(); let authorId: string | null = staff?.roles.includes("photographer") ? staff.user.id : null;
   if (staff && ["owner", "admin"].includes(staff.role) && photographerId) { const { data: assignment } = await supabaseAdmin.from("event_photographers").select("photographer_id").eq("event_id", id).eq("photographer_id", photographerId).maybeSingle(); if (!assignment) return NextResponse.json({ error: "Fotógrafo não vinculado a este evento." }, { status: 400 }); authorId = assignment.photographer_id; }
   if (!event || typeof path !== "string" || !path.startsWith(`${event.slug}/temp/`)) return NextResponse.json({ error: "Envio inválido." }, { status: 400 });
   const { data: raw, error: downloadError } = await supabaseAdmin.storage.from("originals").download(path);

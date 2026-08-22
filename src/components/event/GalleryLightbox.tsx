@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { analyticsAllowed } from "@/lib/privacy-consent";
 import type { EventPhoto } from "@/types";
@@ -9,9 +9,11 @@ import type { EventPhoto } from "@/types";
 export function GalleryLightbox({ photos, index, onIndexChange, onClose }: { photos: EventPhoto[]; index: number; onIndexChange: (index: number) => void; onClose: () => void }) {
   const photo = photos[index]; const { addToCart, items, favorites, toggleFavorite } = useCart();
   const added = photo ? items.some(item => item.id === photo.id) : false; const favorite = photo ? favorites.some(item => item.id === photo.id) : false;
+  const actionCounts = useRef({ items: items.length, favorites: favorites.length });
   const previous = () => onIndexChange((index - 1 + photos.length) % photos.length); const next = () => onIndexChange((index + 1) % photos.length);
   useEffect(() => { const overflow = document.body.style.overflow; document.body.style.overflow = "hidden"; const keydown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); if (event.key === "ArrowLeft") previous(); if (event.key === "ArrowRight") next(); }; window.addEventListener("keydown", keydown); return () => { document.body.style.overflow = overflow; window.removeEventListener("keydown", keydown); }; });
   useEffect(() => { if (!photo) return; localStorage.setItem(`mm-last-photo-${photo.slug}`, JSON.stringify({ id: photo.id, numero: photo.numero, at: Date.now() })); if (!photo.eventId || !analyticsAllowed()) return; const sessionKey = localStorage.getItem("mm-session") || crypto.randomUUID(); localStorage.setItem("mm-session", sessionKey); void fetch("/api/interactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoId: photo.id, eventId: photo.eventId, kind: "view", sessionKey }) }); }, [photo]);
+  useEffect(() => { const changed = actionCounts.current.items !== items.length || actionCounts.current.favorites !== favorites.length; actionCounts.current = { items: items.length, favorites: favorites.length }; if (changed && window.matchMedia("(max-width: 767px)").matches) onClose(); }, [items.length, favorites.length, onClose]);
   if (!photo) return null;
   return <div className="fixed inset-0 z-[100] flex bg-black/95" role="dialog" aria-modal="true" aria-label={`Visualização da foto ${photo.numero}`} onClick={onClose}>
     <button type="button" onClick={onClose} className="absolute right-4 top-4 z-30 grid h-11 w-11 place-items-center rounded-full bg-black/70 text-2xl text-white hover:bg-red-700" aria-label="Fechar visualização">×</button>

@@ -288,16 +288,16 @@ export function Navbar() {
             <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
 
 
-              <Button href={authenticated ? "/minha-conta" : "/login"} variant="ghost">
+              <Button href={authenticated ? "/minha-conta" : "/login"} variant="ghost" onClick={() => setMobileOpen(false)}>
                 {authenticated ? "Minha Conta" : "Login"}
               </Button>
 
 
-              {!authenticated && <Button href="/cadastro" variant="outline">
+              {!authenticated && <Button href="/cadastro" variant="outline" onClick={() => setMobileOpen(false)}>
                 Cadastrar
               </Button>}
 
-              <Button href="/favoritos" variant="ghost">Favoritos</Button>
+              <Button href="/favoritos" variant="ghost" onClick={() => setMobileOpen(false)}>Favoritos</Button>
 
 
 
@@ -305,6 +305,7 @@ export function Navbar() {
                 href="/carrinho"
                 variant="secondary"
                 className="relative"
+                onClick={() => setMobileOpen(false)}
               >
 
                 <CartIcon />

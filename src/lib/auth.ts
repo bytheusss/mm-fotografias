@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { allRoles, hasRole } from "@/lib/roles";
 
 export async function getUser() {
   const supabase = await createClient();
@@ -16,9 +17,9 @@ export async function requireUser(next = "/minha-conta") {
 export async function requireAdmin() {
   const user = await requireUser("/admin");
   const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (!data || !["owner", "admin"].includes(data.role)) redirect("/");
+  const { data } = await supabase.from("profiles").select("role,roles").eq("id", user.id).maybeSingle();
+  if (!hasRole(data, ["owner", "admin"])) redirect("/");
   return user;
 }
 
-export async function requireStaff() { const user = await requireUser("/fotografo"); const supabase = await createClient(); const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(); if (!data || !["owner", "admin", "photographer"].includes(data.role)) redirect("/"); return { user, role: data.role as "owner" | "admin" | "photographer" }; }
+export async function requireStaff() { const user = await requireUser("/fotografo"); const supabase = await createClient(); const { data } = await supabase.from("profiles").select("role,roles").eq("id", user.id).maybeSingle(); if (!hasRole(data, ["owner", "admin", "photographer"])) redirect("/"); return { user, role: data?.role as "owner" | "admin" | "photographer", roles: allRoles(data) }; }

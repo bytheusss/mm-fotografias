@@ -22,7 +22,7 @@ interface ButtonAsButton extends ButtonBaseProps {
 interface ButtonAsLink extends ButtonBaseProps {
   href: string;
   type?: undefined;
-  onClick?: undefined;
+  onClick?: () => void;
 }
 
 type ButtonProps = ButtonAsButton | ButtonAsLink;
@@ -76,7 +76,7 @@ export function Button({
 
   if ("href" in props && props.href) {
     return (
-      <Link href={props.href} className={classes}>
+      <Link href={props.href} className={classes} onClick={props.onClick}>
         {content}
       </Link>
     );

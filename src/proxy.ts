@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasRole } from "@/lib/roles";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -25,9 +26,9 @@ export async function proxy(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/admin") || request.nextUrl.pathname.startsWith("/api/photographer") || request.nextUrl.pathname === "/api/upload" || request.nextUrl.pathname === "/api/upload-batch") {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    const { data: profile } = await supabase.from("profiles").select("role,roles").eq("id", user.id).maybeSingle();
     const photographerRoute = request.nextUrl.pathname.startsWith("/api/photographer");
-    if (!["owner", "admin"].includes(profile?.role || "") && !(photographerRoute && profile?.role === "photographer")) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    if (!hasRole(profile, ["owner", "admin"]) && !(photographerRoute && hasRole(profile, ["photographer"]))) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
   return response;
 }

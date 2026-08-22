@@ -135,7 +135,7 @@ export async function PUT(
 
   if (Array.isArray(body.photographer_ids)) {
     const photographerIds = [...new Set(body.photographer_ids.map(String))].slice(0, 30);
-    const { data: valid } = photographerIds.length ? await supabaseAdmin.from("profiles").select("id").eq("role", "photographer").in("id", photographerIds) : { data: [] };
+    const { data: valid } = photographerIds.length ? await supabaseAdmin.from("profiles").select("id").contains("roles", ["photographer"]).in("id", photographerIds) : { data: [] };
     await supabaseAdmin.from("event_photographers").delete().eq("event_id", id);
     if (valid?.length) await supabaseAdmin.from("event_photographers").insert(valid.map(person => ({ event_id: id, photographer_id: person.id, can_upload: true, can_manage_photos: false, is_default: person.id === body.default_photographer_id || (!body.default_photographer_id && person.id === valid[0].id) })));
   }

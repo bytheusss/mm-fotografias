@@ -3,7 +3,7 @@ import type { NavLink } from "@/types";
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Eventos", href: "/eventos" },
-  { label: "Fotógrafos", href: "/fotografos" },
+  { label: "Quem somos", href: "/fotografos" },
   { label: "Encontre suas Fotos", href: "/#busca" },
   { label: "Sobre", href: "/#sobre" },
   { label: "Contato", href: "/#contato" },
@@ -13,7 +13,7 @@ export const NAV_LINKS: NavLink[] = [
 export const FOOTER_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Eventos", href: "/eventos" },
-  { label: "Fotógrafos", href: "/fotografos" },
+  { label: "Quem somos", href: "/fotografos" },
   { label: "Encontre suas Fotos", href: "/#busca" },
   { label: "Sobre", href: "/#sobre" },
   { label: "Contato", href: "/#contato" },

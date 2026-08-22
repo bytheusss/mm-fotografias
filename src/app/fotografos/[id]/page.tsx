@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function PhotographerProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [{ data: profile }, { data: assignments }, { count }] = await Promise.all([
-    supabaseAdmin.from("profiles").select("id,full_name,bio,instagram_handle,avatar_url").eq("id", id).eq("role", "photographer").eq("public_profile", true).maybeSingle(),
+    supabaseAdmin.from("profiles").select("id,full_name,bio,instagram_handle,avatar_url").eq("id", id).contains("roles", ["photographer"]).eq("public_profile", true).maybeSingle(),
     supabaseAdmin.from("event_photographers").select("events(id,name,slug,city,event_date,cover_image,archived,access_mode)").eq("photographer_id", id).order("display_order"),
     supabaseAdmin.from("photos").select("id", { count: "exact", head: true }).eq("photographer_id", id).is("deleted_at", null),
   ]);

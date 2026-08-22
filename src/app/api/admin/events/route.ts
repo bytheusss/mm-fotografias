@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Esse slug já está em uso" : error.message }, { status: 400 });
   const photographerIds = Array.isArray(body.photographerIds) ? [...new Set(body.photographerIds.map(String))].slice(0, 30) : [];
   if (photographerIds.length) {
-    const { data: valid } = await supabaseAdmin.from("profiles").select("id").eq("role", "photographer").in("id", photographerIds);
+    const { data: valid } = await supabaseAdmin.from("profiles").select("id").contains("roles", ["photographer"]).in("id", photographerIds);
     if (valid?.length) await supabaseAdmin.from("event_photographers").upsert(valid.map((person, index) => ({ event_id: data.id, photographer_id: person.id, can_upload: true, can_manage_photos: false, is_default: index === 0 })));
   }
   await auditAdmin("create", "event", String(data.id), { name, slug, published: Boolean(body.published) });
