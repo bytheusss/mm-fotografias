@@ -37,6 +37,7 @@ export async function GET(
   }
   if (order.download_expires_at && new Date(order.download_expires_at) < new Date()) return NextResponse.json({ error: "Link expirado. Solicite um novo acesso." }, { status: 410 });
   if (order.download_revoked_at) return NextResponse.json({ error: "Acesso aos downloads revogado." }, { status: 403 });
+  if (order.download_limit && Number(order.download_count || 0) >= Number(order.download_limit)) return NextResponse.json({ error: "Limite de downloads atingido. Fale com a M&M para renovar o acesso." }, { status: 429 });
 
   let photos: Array<{ numero?: string | number; imagem?: string }> = [];
   try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }

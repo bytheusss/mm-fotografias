@@ -8,6 +8,7 @@ import { SITE } from "@/lib/constants/site";
 import { CartProvider } from "@/context/CartContext";
 import { CookiePreferences } from "@/components/privacy/CookiePreferences";
 import { AppExperience } from "@/components/layout/AppExperience";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 import "./globals.css";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
           <Footer />
           <CookiePreferences />
           <AppExperience />
+          <MobileBottomNav />
 
         </CartProvider>
 

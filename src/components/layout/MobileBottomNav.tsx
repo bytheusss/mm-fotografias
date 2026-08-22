@@ -1,0 +1,6 @@
+"use client";
+import Link from "next/link";
+import {usePathname} from "next/navigation";
+import {useCart} from "@/context/CartContext";
+const links=[["⌂","Início","/"],["▣","Eventos","/eventos"],["♥","Favoritos","/favoritos"],["☻","Conta","/minha-conta"]] as const;
+export function MobileBottomNav(){const path=usePathname();const{items}=useCart();if(path.startsWith("/admin")||path.startsWith("/fotografo"))return null;return <nav aria-label="Atalhos do aplicativo" className="fixed inset-x-0 bottom-0 z-[120] grid grid-cols-5 border-t border-neutral-800 bg-neutral-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">{links.map(([icon,label,href])=><Link key={href} href={href} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] ${path===href||href!=="/"&&path.startsWith(href)?"text-red-500":"text-neutral-400"}`}><span className="text-xl">{icon}</span>{label}</Link>)}<Link href="/carrinho" className={`relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] ${path.startsWith("/carrinho")?"text-red-500":"text-neutral-400"}`}><span className="text-xl">🛒</span>Carrinho{items.length>0&&<span className="absolute right-[24%] top-2 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">{items.length}</span>}</Link></nav>}

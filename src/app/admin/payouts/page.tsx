@@ -1,0 +1,2 @@
+import PayoutManager from "@/components/admin/PayoutManager";
+export default function PayoutsPage(){return <main className="min-h-screen bg-black px-4 pb-24 pt-32 text-white sm:px-6"><div className="mx-auto max-w-6xl"><h1 className="text-4xl font-black">Repasses da equipe</h1><p className="mb-8 mt-2 text-neutral-400">Histórico financeiro por fotógrafo, com período e comprovante.</p><PayoutManager/></div></main>}

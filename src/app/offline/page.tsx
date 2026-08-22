@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function OfflinePage(){return <main className="grid min-h-screen place-items-center bg-black px-6 text-center text-white"><div><p className="text-6xl">📷</p><h1 className="mt-5 text-4xl font-black">Você está offline</h1><p className="mx-auto mt-3 max-w-md text-neutral-400">Confira sua conexão. As páginas e imagens abertas anteriormente ainda podem estar disponíveis no aparelho.</p><Link href="/" className="mt-7 inline-block rounded-lg bg-red-600 px-6 py-3 font-bold">Tentar novamente</Link></div></main>}
