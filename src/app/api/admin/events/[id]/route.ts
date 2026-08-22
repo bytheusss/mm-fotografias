@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { hashEventPassword } from "@/lib/event-access";
+import { sendPush } from "@/lib/push";
 
 
 
@@ -76,6 +77,7 @@ export async function PUT(
 
   const body =
     await request.json();
+  const {data:previous}=await supabaseAdmin.from("events").select("published").eq("id",id).maybeSingle();
 
 
 
@@ -139,6 +141,8 @@ export async function PUT(
     await supabaseAdmin.from("event_photographers").delete().eq("event_id", id);
     if (valid?.length) await supabaseAdmin.from("event_photographers").insert(valid.map(person => ({ event_id: id, photographer_id: person.id, can_upload: true, can_manage_photos: false, is_default: person.id === body.default_photographer_id || (!body.default_photographer_id && person.id === valid[0].id) })));
   }
+
+  if(!previous?.published&&event.published){const{data:followers}=await supabaseAdmin.from("event_follows").select("user_id").eq("event_id",id);const notice={title:`Fotos de ${event.name} disponíveis 📸`,body:"O álbum que você acompanha foi publicado. Encontre suas fotos agora.",href:`/eventos/${event.slug}`};for(const follower of followers||[]){await supabaseAdmin.from("client_notifications").insert({user_id:follower.user_id,...notice});await sendPush(follower.user_id,notice).catch(()=>undefined)}}
 
 
 
