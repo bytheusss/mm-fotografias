@@ -22,11 +22,12 @@ export async function proxy(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set("X-Frame-Options", "DENY");
-  if (request.nextUrl.pathname.startsWith("/api/admin") || request.nextUrl.pathname === "/api/upload" || request.nextUrl.pathname === "/api/upload-batch") {
+  if (request.nextUrl.pathname.startsWith("/api/admin") || request.nextUrl.pathname.startsWith("/api/photographer") || request.nextUrl.pathname === "/api/upload" || request.nextUrl.pathname === "/api/upload-batch") {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-    if (profile?.role !== "admin") return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    const photographerRoute = request.nextUrl.pathname.startsWith("/api/photographer");
+    if (profile?.role !== "admin" && !(photographerRoute && profile?.role === "photographer")) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
   return response;
 }

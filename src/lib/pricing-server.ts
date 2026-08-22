@@ -14,6 +14,8 @@ export async function getCartPricing(items: Array<{ id?: unknown }>) {
   const { data: photos, error } = await supabaseAdmin.from("photos").select("id,event_id,price,status").in("id", ids);
   if (error || !photos || photos.length !== ids.length || photos.some(photo => photo.status !== "available")) throw new Error("Uma ou mais fotos não estão disponíveis. Atualize o carrinho.");
   const eventIds = [...new Set(photos.map(photo => photo.event_id))];
+  const { data: events } = await supabaseAdmin.from("events").select("id,sales_paused,publish_at,unpublish_at,access_expires_at").in("id", eventIds);
+  const now = Date.now(); if (events?.some(event => event.sales_paused || (event.publish_at && new Date(event.publish_at).getTime() > now) || (event.unpublish_at && new Date(event.unpublish_at).getTime() <= now) || (event.access_expires_at && new Date(event.access_expires_at).getTime() <= now))) throw new Error("As vendas deste evento estão pausadas ou encerradas.");
   const [{ data: eventPackages }, globalPackages] = await Promise.all([
     supabaseAdmin.from("event_pricing_packages").select("event_id,min_quantity,unit_price,label").in("event_id", eventIds).eq("active", true).order("min_quantity"),
     getPricingPackages(),

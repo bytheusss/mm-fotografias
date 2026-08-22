@@ -39,7 +39,7 @@ export default async function EventoPage({
   if (!event) {
     notFound();
   }
-  if (event.accessMode === "password" && !(await hasEventAccess(event.id))) return <EventPasswordGate slug={event.slug} name={event.name} />;
+  if (event.accessMode === "password" && !(await hasEventAccess(event.id, event.passwordVersion))) return <EventPasswordGate slug={event.slug} name={event.name} />;
 
   const photos = await getEventPhotos(slug);
 
@@ -64,6 +64,7 @@ export default async function EventoPage({
             </p>
 
             <EventShareTools title={event.name} initialMessage={event.shareMessage} />
+            {event.salesPaused && <div className="mt-6 rounded-xl border border-yellow-700 bg-yellow-950/50 p-4 font-semibold text-yellow-200">Vendas temporariamente pausadas. Você ainda pode visualizar e favoritar as fotos.</div>}
 
           </div>
 

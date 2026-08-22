@@ -106,12 +106,12 @@ export function PhotoCard({
 
         <button
           onClick={() => { addToCart(photo); track("cart"); }}
-          disabled={alreadyAdded}
+          disabled={alreadyAdded || photo.salesPaused}
           className={`
             w-full rounded-sm px-4 py-2 text-sm font-semibold
             transition
             ${
-              alreadyAdded
+              alreadyAdded || photo.salesPaused
               ? "bg-neutral-700 text-neutral-400 cursor-not-allowed"
               : "bg-red-600 text-white hover:bg-red-700"
             }
@@ -119,7 +119,9 @@ export function PhotoCard({
         >
 
           {
-            alreadyAdded
+            photo.salesPaused
+            ? "Vendas pausadas"
+            : alreadyAdded
             ? "Adicionada ✓"
             : "Adicionar ao carrinho"
           }

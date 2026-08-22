@@ -1,0 +1,4 @@
+"use client";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+export function DuplicateEventButton({ id }: { id: string }) { const router = useRouter(); const [loading, setLoading] = useState(false); return <button type="button" disabled={loading} onClick={async () => { if (!confirm("Duplicar configurações, capa, preços e mensagem deste evento? As fotos não serão copiadas.")) return; setLoading(true); const response = await fetch(`/api/admin/events/${id}/duplicate`, { method: "POST" }); const data = await response.json(); setLoading(false); if (!response.ok) return alert(data.error || "Erro ao duplicar."); router.push(`/admin/events/${data.eventId}/edit`); }} className="rounded-lg bg-neutral-700 px-5 py-3 font-bold disabled:opacity-50">{loading ? "Duplicando…" : "Duplicar evento"}</button>; }

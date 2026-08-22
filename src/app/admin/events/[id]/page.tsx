@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { notFound } from "next/navigation";
+import { DuplicateEventButton } from "@/components/admin/DuplicateEventButton";
 
 
 export default async function EventAdminPage({
@@ -234,6 +235,7 @@ export default async function EventAdminPage({
                 >
                   Editar
                 </a>
+                <DuplicateEventButton id={event.id} />
 
 
               </div>

@@ -20,3 +20,5 @@ export async function requireAdmin() {
   if (data?.role !== "admin") redirect("/");
   return user;
 }
+
+export async function requireStaff() { const user = await requireUser("/fotografo"); const supabase = await createClient(); const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(); if (!data || !["admin", "photographer"].includes(data.role)) redirect("/"); return { user, role: data.role as "admin" | "photographer" }; }

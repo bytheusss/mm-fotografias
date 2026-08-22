@@ -9,6 +9,7 @@ const links = [
   ["▤", "Pedidos", "/admin/orders"], ["$", "Pacotes", "/admin/pricing"], ["%", "Cupons", "/admin/coupons"],
   ["◴", "Carrinhos", "/admin/abandoned-carts"], ["↗", "Financeiro", "/admin/finance"],
   ["◉", "Métricas", "/admin/analytics"],
+  ["♟", "Fotógrafos", "/admin/collaborators"],
   ["★", "Promoção", "/admin/promotion"], ["≡", "Auditoria", "/admin/audit"], ["⚙", "Integrações", "/admin/integrations"],
 ] as const;
 

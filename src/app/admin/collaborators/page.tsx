@@ -1,0 +1,2 @@
+import CollaboratorManager from "@/components/admin/CollaboratorManager";
+export default function CollaboratorsPage() { return <main className="min-h-screen bg-black px-6 pb-20 pt-32 text-white"><div className="mx-auto max-w-5xl"><h1 className="text-4xl font-black">Fotógrafos colaboradores</h1><p className="mb-8 mt-2 text-neutral-400">Libere upload evento por evento sem dar acesso à administração da empresa.</p><CollaboratorManager /></div></main>; }

@@ -19,8 +19,9 @@ const fallbackEvents: Event[] = [
   ];
 
 export const getAllEvents = cache(async (): Promise<Event[]> => {
-  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived,share_message,base_price,access_mode").eq("published", true).eq("archived", false).eq("access_mode", "public").order("event_date", { ascending: false });
-  return data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode })) : fallbackEvents;
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,published,archived,share_message,base_price,access_mode,sales_paused,publish_at,unpublish_at,access_expires_at,password_version").eq("published", true).eq("archived", false).eq("access_mode", "public").order("event_date", { ascending: false });
+  const now = Date.now(); const visible = data?.filter(event => (!event.publish_at || new Date(event.publish_at).getTime() <= now) && (!event.unpublish_at || new Date(event.unpublish_at).getTime() > now) && (!event.access_expires_at || new Date(event.access_expires_at).getTime() > now));
+  return visible?.length ? visible.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode, salesPaused: event.sales_paused, passwordVersion: Number(event.password_version || 1) })) : fallbackEvents;
 });
 
 
@@ -29,8 +30,9 @@ export const getEventBySlug = cache(async (
   slug: string
 ): Promise<Event | undefined> => {
 
-  const { data: event } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,share_message,base_price,access_mode").eq("slug", slug).eq("published", true).eq("archived", false).maybeSingle();
-  return event ? { id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode } : undefined;
+  const { data: event } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,share_message,base_price,access_mode,sales_paused,publish_at,unpublish_at,access_expires_at,password_version").eq("slug", slug).eq("published", true).eq("archived", false).maybeSingle();
+  const now = Date.now(); if (!event || (event.publish_at && new Date(event.publish_at).getTime() > now) || (event.unpublish_at && new Date(event.unpublish_at).getTime() <= now) || (event.access_expires_at && new Date(event.access_expires_at).getTime() <= now)) return undefined;
+  return { id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image, shareMessage: event.share_message, basePrice: Number(event.base_price), accessMode: event.access_mode, salesPaused: event.sales_paused, passwordVersion: Number(event.password_version || 1) };
 
 });
 
@@ -136,6 +138,7 @@ export const getEventPhotos = cache(
 
             status:
               "available",
+            salesPaused: event.salesPaused,
 
 
           } as EventPhoto;

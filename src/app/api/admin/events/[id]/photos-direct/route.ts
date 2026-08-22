@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateImageVersions } from "@/lib/supabase/upload/image-processing";
+import { canUploadEvent } from "@/lib/photographer-auth";
 
 export const maxDuration = 60;
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const body = await request.json(); const size = Number(body.size); const type = String(body.type || ""); const checksum = String(body.checksum || "");
+  if (!(await canUploadEvent(id))) return NextResponse.json({ error: "Sem permissão para enviar neste evento." }, { status: 403 });
   if (!type.startsWith("image/") || !Number.isFinite(size) || size <= 0 || size > MAX_FILE_SIZE) return NextResponse.json({ error: "Use imagens de até 25 MB." }, { status: 400 });
   const { data: event } = await supabaseAdmin.from("events").select("slug,base_price").eq("id", id).maybeSingle();
   if (!event) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 });
@@ -18,6 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const { path, checksum } = await request.json();
+  if (!(await canUploadEvent(id))) return NextResponse.json({ error: "Sem permissão para enviar neste evento." }, { status: 403 });
   const { data: event } = await supabaseAdmin.from("events").select("slug,base_price").eq("id", id).maybeSingle();
   if (!event || typeof path !== "string" || !path.startsWith(`${event.slug}/temp/`)) return NextResponse.json({ error: "Envio inválido." }, { status: 400 });
   const { data: raw, error: downloadError } = await supabaseAdmin.storage.from("originals").download(path);

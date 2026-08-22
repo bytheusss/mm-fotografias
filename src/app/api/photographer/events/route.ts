@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server";
+import { getStaffUser } from "@/lib/photographer-auth";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+export async function GET() { const staff = await getStaffUser(); if (!staff) return NextResponse.json({ error: "Acesso negado." }, { status: 403 }); if (staff.role === "admin") { const { data } = await supabaseAdmin.from("events").select("id,name,slug,archived").eq("archived", false).order("event_date", { ascending: false }); return NextResponse.json({ events: data || [] }); } const { data } = await supabaseAdmin.from("event_photographers").select("events(id,name,slug,archived)").eq("photographer_id", staff.user.id).eq("can_upload", true); const events = (data || []).map(row => row.events).filter(Boolean); return NextResponse.json({ events }); }

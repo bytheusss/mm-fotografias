@@ -89,7 +89,7 @@ export async function PUT(
     slug,
     cover_image,
     published,
-    share_message, base_price, access_mode, access_password
+    share_message, base_price, access_mode, access_password, sales_paused, publish_at, unpublish_at, access_expires_at
 
   } = body;
 
@@ -100,8 +100,8 @@ export async function PUT(
   const price = Number(base_price);
   if (!Number.isFinite(price) || price <= 0) return NextResponse.json({ error: "Informe um preço válido." }, { status: 400 });
   if (!["public", "unlisted", "password"].includes(access_mode)) return NextResponse.json({ error: "Visibilidade inválida." }, { status: 400 });
-  const update: Record<string, unknown> = { name, city, event_date, slug, cover_image, published, share_message: String(share_message || "").trim().slice(0, 1200) || null, base_price: price, access_mode };
-  if (access_mode === "password" && String(access_password || "").trim()) update.access_password_hash = hashEventPassword(id, String(access_password));
+  const update: Record<string, unknown> = { name, city, event_date, slug, cover_image, published, share_message: String(share_message || "").trim().slice(0, 1200) || null, base_price: price, access_mode, sales_paused: Boolean(sales_paused), publish_at: publish_at ? new Date(publish_at).toISOString() : null, unpublish_at: unpublish_at ? new Date(unpublish_at).toISOString() : null, access_expires_at: access_expires_at ? new Date(access_expires_at).toISOString() : null };
+  if (access_mode === "password" && String(access_password || "").trim()) { update.access_password_hash = hashEventPassword(id, String(access_password)); const { data: currentVersion } = await supabaseAdmin.from("events").select("password_version").eq("id", id).maybeSingle(); update.password_version = Number(currentVersion?.password_version || 1) + 1; }
   if (access_mode !== "password") update.access_password_hash = null;
   if (access_mode === "password" && !update.access_password_hash) { const { data: current } = await supabaseAdmin.from("events").select("access_password_hash").eq("id", id).maybeSingle(); if (!current?.access_password_hash) return NextResponse.json({ error: "Defina uma senha para proteger o álbum." }, { status: 400 }); }
 

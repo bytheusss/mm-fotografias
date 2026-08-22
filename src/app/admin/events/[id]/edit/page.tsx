@@ -35,7 +35,11 @@ export default function EditEventPage(){
     share_message:"",
     base_price:15,
     access_mode:"public",
-    access_password:""
+    access_password:"",
+    sales_paused:false,
+    publish_at:"",
+    unpublish_at:"",
+    access_expires_at:""
 
   });
 
@@ -360,6 +364,9 @@ export default function EditEventPage(){
           <div><label className="mb-2 block">Visibilidade do evento</label><select name="access_mode" value={form.access_mode} onChange={change} className="w-full rounded bg-neutral-800 p-3"><option value="public">Público — aparece na lista</option><option value="unlisted">Não listado — somente pelo link</option><option value="password">Protegido por senha</option></select><p className="mt-1 text-xs text-neutral-500">Eventos não listados e protegidos não aparecem na página Eventos.</p></div>
 
           {form.access_mode === "password" && <div><label className="mb-2 block">Senha do álbum</label><input name="access_password" type="password" value={form.access_password || ""} onChange={change} autoComplete="new-password" placeholder="Deixe em branco para manter a senha atual" className="w-full rounded bg-neutral-800 p-3" /></div>}
+
+          <label className="flex items-center gap-3 rounded-lg bg-yellow-950/30 p-4"><input type="checkbox" name="sales_paused" checked={Boolean(form.sales_paused)} onChange={change} />Pausar novas compras sem tirar o evento do ar</label>
+          <div className="grid gap-4 md:grid-cols-3"><label className="text-sm text-neutral-400">Publicar a partir de<input type="datetime-local" name="publish_at" value={form.publish_at ? String(form.publish_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label><label className="text-sm text-neutral-400">Encerrar vendas/publicação<input type="datetime-local" name="unpublish_at" value={form.unpublish_at ? String(form.unpublish_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label><label className="text-sm text-neutral-400">Expirar acesso ao álbum<input type="datetime-local" name="access_expires_at" value={form.access_expires_at ? String(form.access_expires_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label></div>
 
 
 

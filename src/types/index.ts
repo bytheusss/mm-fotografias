@@ -14,6 +14,8 @@ export interface Event {
   shareMessage?: string | null;
   basePrice?: number;
   accessMode?: "public" | "unlisted" | "password";
+  salesPaused?: boolean;
+  passwordVersion?: number;
 }
 
 export type PhotoStatus = "available" | "sold" | "reserved";
@@ -28,6 +30,7 @@ export interface EventPhoto {
   thumbnail: string;
   preco: number;
   status: PhotoStatus;
+  salesPaused?: boolean;
 }
 
 export interface HowItWorksStep {
