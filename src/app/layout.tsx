@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Footer } from "@/components/layout/Footer";
@@ -7,6 +7,7 @@ import { PromoBanner } from "@/components/layout/PromoBanner";
 import { SITE } from "@/lib/constants/site";
 import { CartProvider } from "@/context/CartContext";
 import { CookiePreferences } from "@/components/privacy/CookiePreferences";
+import { AppExperience } from "@/components/layout/AppExperience";
 
 import "./globals.css";
 
@@ -51,6 +52,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#0b0c0e" };
+
 
 export default function RootLayout({
   children,
@@ -77,6 +80,7 @@ export default function RootLayout({
 
           <Footer />
           <CookiePreferences />
+          <AppExperience />
 
         </CartProvider>
 

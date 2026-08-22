@@ -11,5 +11,5 @@ export async function isApiAdmin() {
   if (!user) return false;
   const supabase = await createClient();
   const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  return data?.role === "admin";
+  return ["owner", "admin"].includes(data?.role || "");
 }

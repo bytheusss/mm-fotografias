@@ -14,6 +14,11 @@ export async function POST(request: Request) {
   while ((await supabaseAdmin.from("events").select("id").eq("slug", slug).maybeSingle()).data) slug = `${baseSlug}-${suffix++}`;
   const { data, error } = await supabaseAdmin.from("events").insert({ name, city, event_date: eventDate, slug, folder: slug, cover_image: body.cover_image || null, published: Boolean(body.published), total_photos: 0 }).select("id,slug").single();
   if (error) return NextResponse.json({ error: error.code === "23505" ? "Esse slug já está em uso" : error.message }, { status: 400 });
+  const photographerIds = Array.isArray(body.photographerIds) ? [...new Set(body.photographerIds.map(String))].slice(0, 30) : [];
+  if (photographerIds.length) {
+    const { data: valid } = await supabaseAdmin.from("profiles").select("id").eq("role", "photographer").in("id", photographerIds);
+    if (valid?.length) await supabaseAdmin.from("event_photographers").upsert(valid.map((person, index) => ({ event_id: data.id, photographer_id: person.id, can_upload: true, can_manage_photos: false, is_default: index === 0 })));
+  }
   await auditAdmin("create", "event", String(data.id), { name, slug, published: Boolean(body.published) });
   return NextResponse.json({ success: true, event: data });
 }

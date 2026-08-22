@@ -48,6 +48,12 @@ export default async function AdminPage() {
 
   const { data: paidOrders } = await supabaseAdmin.from("orders").select("total").eq("status", "paid");
   const revenue = paidOrders?.reduce((sum, order) => sum + Number(order.total || 0), 0) || 0;
+  const [{ count: unattributed }, { count: pendingOrders }, { count: openPrivacy }, { count: eventsWithoutCover }] = await Promise.all([
+    supabaseAdmin.from("photos").select("*", { count: "exact", head: true }).is("photographer_id", null).is("deleted_at", null),
+    supabaseAdmin.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabaseAdmin.from("data_subject_requests").select("*", { count: "exact", head: true }).in("status", ["open", "reviewing"]),
+    supabaseAdmin.from("events").select("*", { count: "exact", head: true }).is("cover_image", null).eq("archived", false),
+  ]);
 
 
 
@@ -122,7 +128,7 @@ export default async function AdminPage() {
           </h2>
 
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
 
             <a
               href="/admin/events"
@@ -167,6 +173,8 @@ export default async function AdminPage() {
 
         <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-6"><p className="text-neutral-400">Faturamento confirmado</p><p className="mt-2 text-3xl font-bold">{revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div>
 
+        <section className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-5 sm:p-6"><h2 className="mb-4 text-xl font-bold">Central operacional</h2><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Operational href="/admin/events" label="Eventos sem capa" value={eventsWithoutCover || 0}/><Operational href="/admin/events" label="Fotos sem fotógrafo" value={unattributed || 0}/><Operational href="/admin/orders?status=pending" label="Pedidos pendentes" value={pendingOrders || 0}/><Operational href="/admin/privacy" label="Solicitações LGPD" value={openPrivacy || 0}/></div></section>
+
 
 
       </div>
@@ -176,6 +184,8 @@ export default async function AdminPage() {
 
   );
 }
+
+function Operational({ href, label, value }: { href: string; label: string; value: number }) { return <Link href={href} className={`rounded-xl border p-4 transition hover:-translate-y-0.5 ${value ? "border-amber-800 bg-amber-950/30" : "border-neutral-800 bg-black/40"}`}><span className="text-sm text-neutral-400">{label}</span><b className="mt-2 block text-2xl">{value}</b><small className="text-neutral-500">{value ? "Requer atenção →" : "Tudo certo"}</small></Link>; }
 
 
 

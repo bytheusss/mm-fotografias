@@ -11,11 +11,12 @@ export default function UploadPage() {
   const [message,setMessage] = useState("");
   const [progress,setProgress] = useState(0);
   const [events,setEvents] = useState<Array<{ id: string; name: string; slug: string; archived: boolean }>>([]);
-  const [photographers,setPhotographers] = useState<Array<{ id: string; name: string }>>([]);
+  const [photographers,setPhotographers] = useState<Array<{ id: string; name: string; isDefault?: boolean }>>([]);
   const [photographerId,setPhotographerId] = useState("");
+  const [category,setCategory] = useState("Geral");
 
   useEffect(() => { const timer = window.setTimeout(async () => { const selected = new URLSearchParams(window.location.search).get("event") || ""; const response = await fetch("/api/admin/events"); const data = await response.json(); setEvents(data.events || []); setEventId(selected); }, 0); return () => window.clearTimeout(timer); }, []);
-  useEffect(() => { if (!eventId) { setPhotographers([]); return; } fetch(`/api/admin/events/${eventId}/photographers`).then(response => response.json()).then(data => setPhotographers(data.photographers || [])).catch(() => setPhotographers([])); setPhotographerId(""); }, [eventId]);
+  useEffect(() => { const timer = window.setTimeout(() => { if (!eventId) { setPhotographers([]); setPhotographerId(""); return; } fetch(`/api/admin/events/${eventId}/photographers`).then(response => response.json()).then(data => { const rows = data.photographers || []; setPhotographers(rows); setPhotographerId(rows.find((person: { isDefault?: boolean }) => person.isDefault)?.id || rows[0]?.id || ""); }).catch(() => setPhotographers([])); }, 0); return () => window.clearTimeout(timer); }, [eventId]);
 
 
   async function handleUpload(){
@@ -40,7 +41,7 @@ export default function UploadPage() {
         const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
         if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
-        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum, photographerId: photographerId || null }), signal: AbortSignal.timeout(90000) });
+        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum, photographerId: photographerId || null, category }), signal: AbortSignal.timeout(90000) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
         sent += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`);
       }
@@ -111,7 +112,8 @@ export default function UploadPage() {
               e=>setEventId(e.target.value)
             }
           ><option value="">Selecione o evento</option>{events.filter(event => !event.archived).map(event => <option key={event.id} value={event.id}>{event.name} ({event.slug})</option>)}</select>
-          {photographers.length > 0 && <><label className="mb-2 block">Fotógrafo responsável</label><select value={photographerId} onChange={event => setPhotographerId(event.target.value)} className="mb-5 w-full rounded-lg bg-neutral-800 p-3"><option value="">Não informado / equipe M&M</option>{photographers.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></>}
+          {photographers.length > 0 && <><label className="mb-2 block">Fotógrafo responsável</label><select value={photographerId} onChange={event => setPhotographerId(event.target.value)} className="mb-5 w-full rounded-lg bg-neutral-800 p-3"><option value="">Não informado / equipe M&M</option>{photographers.map(person => <option key={person.id} value={person.id}>{person.name}{person.isDefault ? " — padrão" : ""}</option>)}</select></>}
+          <label className="mb-2 block">Categoria ou área das fotos</label><input value={category} onChange={event => setCategory(event.target.value)} maxLength={60} placeholder="Ex.: Pista, Exposição, Premiação" className="mb-5 w-full rounded-lg bg-neutral-800 p-3"/><p className="-mt-3 mb-5 text-xs text-neutral-500">Todas as fotos deste envio receberão esta categoria para facilitar o filtro do cliente.</p>
 
 
           <label className="block mb-2">

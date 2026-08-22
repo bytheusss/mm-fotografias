@@ -30,6 +30,7 @@ interface CartContextProps {
   pricing: ReturnType<typeof calculatePrice>;
 
   discountLabel: string;
+  nextDiscount: string;
 
   favorites: EventPhoto[];
 
@@ -214,6 +215,9 @@ export function CartProvider({
   const groupPrices = groups.map(group => calculatePrice(group.length, eventPricing[group[0].eventId || ""] || pricingPackages, Number(group[0].preco || 15)));
   const pricing = { pricePerPhoto: items.length ? groupPrices.reduce((sum, value) => sum + value.total, 0) / items.length : 0, subtotal: groupPrices.reduce((sum, value) => sum + value.subtotal, 0), total: groupPrices.reduce((sum, value) => sum + value.total, 0), economy: groupPrices.reduce((sum, value) => sum + value.economy, 0), label: groupPrices.map(value => value.label).filter(Boolean).join(" · ") };
   const discountLabel = pricing.label;
+  const nextCandidates = groups.map(group => { const packages = eventPricing[group[0].eventId || ""] || pricingPackages; const next = [...packages].filter(item => item.minQuantity > group.length).sort((a, b) => a.minQuantity - b.minQuantity)[0]; return next ? { missing: next.minQuantity - group.length, label: next.label, event: group[0].evento } : null; }).filter(Boolean) as Array<{ missing: number; label: string; event: string }>;
+  const closestDiscount = nextCandidates.sort((a, b) => a.missing - b.missing)[0];
+  const nextDiscount = closestDiscount ? `Faltam ${closestDiscount.missing} foto${closestDiscount.missing === 1 ? "" : "s"} de ${closestDiscount.event} para ${closestDiscount.label.toLowerCase()}.` : "Você já atingiu o melhor pacote disponível.";
   const total = pricing.total;
 
 
@@ -235,6 +239,7 @@ export function CartProvider({
         total,
         pricing,
         discountLabel,
+        nextDiscount,
         favorites,
         toggleFavorite,
       }}

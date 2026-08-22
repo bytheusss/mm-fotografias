@@ -18,6 +18,8 @@ export default function EditEventPage(){
   const [saving,setSaving] = useState(false);
   const [uploading,setUploading] = useState(false);
   const [uploadStage,setUploadStage] = useState("");
+  const [message,setMessage] = useState("");
+  const [photographers,setPhotographers] = useState<Array<{ id:string; full_name?:string; email:string }>>([]);
 
 
   const [newCover,setNewCover] = useState<File|null>(null);
@@ -39,7 +41,9 @@ export default function EditEventPage(){
     sales_paused:false,
     publish_at:"",
     unpublish_at:"",
-    access_expires_at:""
+    access_expires_at:"",
+    photographer_ids:[] as string[],
+    default_photographer_id:""
 
   });
 
@@ -52,20 +56,15 @@ export default function EditEventPage(){
     async function load(){
 
 
-      const res =
-        await fetch(
-          `/api/admin/events/${id}`
-        );
-
-
-      const data =
-        await res.json();
+      const [res, peopleResponse] = await Promise.all([fetch(`/api/admin/events/${id}`), fetch("/api/admin/photographers")]);
+      const [data, people] = await Promise.all([res.json(), peopleResponse.json()]);
 
 
 
       setForm(
         data.event
       );
+      setPhotographers(people.photographers || []);
 
 
       setLoading(false);
@@ -116,9 +115,7 @@ export default function EditEventPage(){
 
     if(!newCover){
 
-      alert(
-        "Selecione uma imagem"
-      );
+      setMessage("Selecione uma imagem.");
 
       return;
 
@@ -141,9 +138,9 @@ export default function EditEventPage(){
       if (!finishResponse.ok) throw new Error(data.error || "Erro ao processar a capa.");
       setForm(current => ({ ...current, cover_image: data.url }));
       setNewCover(null);
-      alert("Capa enviada e salva!");
+      setMessage("Capa enviada e salva!");
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro no upload da capa.");
+      setMessage(error instanceof Error ? error.message : "Erro no upload da capa.");
     } finally {
       setUploading(false);
       setUploadStage("");
@@ -204,9 +201,7 @@ export default function EditEventPage(){
     }else{
 
 
-      alert(
-        data.error
-      );
+      setMessage(data.error || "Não foi possível salvar o evento.");
 
 
     }
@@ -270,7 +265,7 @@ export default function EditEventPage(){
         className="
         max-w-3xl
         mx-auto
-        px-6
+        px-4 sm:px-6
         "
       >
 
@@ -278,7 +273,7 @@ export default function EditEventPage(){
 
         <h1
           className="
-          text-4xl
+          text-3xl sm:text-4xl
           font-bold
           mb-10
           "
@@ -297,7 +292,7 @@ export default function EditEventPage(){
           className="
           bg-neutral-900
           rounded-xl
-          p-8
+          p-5 sm:p-8
           space-y-6
           "
         >
@@ -364,6 +359,8 @@ export default function EditEventPage(){
           <div><label className="mb-2 block">Visibilidade do evento</label><select name="access_mode" value={form.access_mode} onChange={change} className="w-full rounded bg-neutral-800 p-3"><option value="public">Público — aparece na lista</option><option value="unlisted">Não listado — somente pelo link</option><option value="password">Protegido por senha</option></select><p className="mt-1 text-xs text-neutral-500">Eventos não listados e protegidos não aparecem na página Eventos.</p></div>
 
           {form.access_mode === "password" && <div><label className="mb-2 block">Senha do álbum</label><input name="access_password" type="password" value={form.access_password || ""} onChange={change} autoComplete="new-password" placeholder="Deixe em branco para manter a senha atual" className="w-full rounded bg-neutral-800 p-3" /></div>}
+
+          <fieldset className="rounded-xl border border-neutral-700 p-4"><legend className="px-2 font-bold">Fotógrafos do evento</legend>{photographers.length ? <div className="grid gap-2 sm:grid-cols-2">{photographers.map(person => { const checked = form.photographer_ids?.includes(person.id); return <label key={person.id} className="flex items-center gap-3 rounded-lg bg-black p-3"><input type="checkbox" checked={checked} onChange={event => setForm(current => ({ ...current, photographer_ids: event.target.checked ? [...(current.photographer_ids || []), person.id] : (current.photographer_ids || []).filter(value => value !== person.id), default_photographer_id: !event.target.checked && current.default_photographer_id === person.id ? "" : current.default_photographer_id }))}/><span className="min-w-0"><b className="block truncate">{person.full_name || person.email}</b><small className="block truncate text-neutral-500">{person.email}</small></span></label>; })}</div> : <p className="text-sm text-neutral-400">Cadastre fotógrafos em Equipe para vinculá-los.</p>}{form.photographer_ids?.length > 0 && <label className="mt-4 block text-sm text-neutral-400">Fotógrafo padrão dos uploads<select value={form.default_photographer_id || ""} onChange={event => setForm(current => ({ ...current, default_photographer_id: event.target.value }))} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white"><option value="">Primeiro selecionado</option>{photographers.filter(person => form.photographer_ids.includes(person.id)).map(person => <option key={person.id} value={person.id}>{person.full_name || person.email}</option>)}</select></label>}</fieldset>
 
           <label className="flex items-center gap-3 rounded-lg bg-yellow-950/30 p-4"><input type="checkbox" name="sales_paused" checked={Boolean(form.sales_paused)} onChange={change} />Pausar novas compras sem tirar o evento do ar</label>
           <div className="grid gap-4 md:grid-cols-3"><label className="text-sm text-neutral-400">Publicar a partir de<input type="datetime-local" name="publish_at" value={form.publish_at ? String(form.publish_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label><label className="text-sm text-neutral-400">Encerrar vendas/publicação<input type="datetime-local" name="unpublish_at" value={form.unpublish_at ? String(form.unpublish_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label><label className="text-sm text-neutral-400">Expirar acesso ao álbum<input type="datetime-local" name="access_expires_at" value={form.access_expires_at ? String(form.access_expires_at).slice(0, 16) : ""} onChange={change} className="mt-2 w-full rounded bg-neutral-800 p-3 text-white" /></label></div>
@@ -580,6 +577,8 @@ export default function EditEventPage(){
 
 
           </button>
+
+          {message && <p className={`rounded-lg p-3 text-sm ${message.includes("salva") ? "bg-green-950 text-green-200" : "bg-red-950 text-red-200"}`} role="status">{message}</p>}
 
           <EventPricingManager eventId={id} />
 

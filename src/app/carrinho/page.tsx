@@ -14,6 +14,7 @@ export default function CartPage() {
     items,
     removeFromCart,
     pricing,
+    nextDiscount,
   } = useCart();
 
 
@@ -30,7 +31,7 @@ export default function CartPage() {
       <Container>
 
 
-        <h1 className="mb-10 text-4xl font-bold">
+        <h1 className="mb-8 text-3xl font-bold sm:mb-10 sm:text-4xl">
           Seu Carrinho
         </h1>
 
@@ -83,8 +84,8 @@ export default function CartPage() {
                 <div
                   key={photo.id}
                   className="
-                    flex
-                    items-center
+                    flex flex-col
+                    items-stretch sm:flex-row sm:items-center
                     justify-between
                     gap-5
                     rounded-lg
@@ -96,14 +97,13 @@ export default function CartPage() {
                 >
 
 
-                  <div className="flex items-center gap-5">
+                  <div className="flex min-w-0 items-center gap-4 sm:gap-5">
 
 
                     <div
                       className="
                         relative
-                        h-24
-                        w-24
+                        h-20 w-20 shrink-0 sm:h-24 sm:w-24
                         overflow-hidden
                         rounded-lg
                         bg-black
@@ -157,7 +157,7 @@ export default function CartPage() {
 
 
 
-                  <div className="text-right">
+                  <div className="flex items-center justify-between text-right sm:block">
 
 
                     <strong className="block text-lg">
@@ -229,6 +229,8 @@ export default function CartPage() {
                 </span>
 
               </div>
+
+              <div className="mt-4 rounded-lg border border-blue-800/60 bg-blue-950/40 p-4 text-sm text-blue-200">🎯 {nextDiscount}</div>
 
 
 

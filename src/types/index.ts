@@ -33,6 +33,7 @@ export interface EventPhoto {
   salesPaused?: boolean;
   photographerId?: string | null;
   photographerName?: string | null;
+  category?: string | null;
 }
 
 export interface HowItWorksStep {
