@@ -44,6 +44,7 @@ export default async function EventPhotosPage({
         "event_id",
         id
       )
+      .is("deleted_at", null)
       .order(
         "number",
         {
@@ -56,6 +57,12 @@ export default async function EventPhotosPage({
   if(error){
     console.error(error);
   }
+
+  const photosWithUrls = await Promise.all((photos || []).map(async photo => {
+    const path = String(photo.original_path || "").replace(/^originals\//, "");
+    const { data } = path ? await supabaseAdmin.storage.from("originals").createSignedUrl(path, 300) : { data: null };
+    return { ...photo, originalSignedUrl: data?.signedUrl || null };
+  }));
 
 
 
@@ -149,7 +156,7 @@ export default async function EventPhotosPage({
 
 
         {
-          photos?.map(
+          photosWithUrls.map(
             (photo:any)=>(
 
 
@@ -220,10 +227,10 @@ export default async function EventPhotosPage({
 
 
                     <a
-                      href={
-                        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${photo.original_path}`
-                      }
+                      href={photo.originalSignedUrl || "#"}
                       target="_blank"
+                      rel="noopener noreferrer"
+                      aria-disabled={!photo.originalSignedUrl}
                       className="
                       flex-1
                       bg-neutral-700
@@ -231,6 +238,7 @@ export default async function EventPhotosPage({
                       py-2
                       rounded
                       text-sm
+                      aria-disabled:pointer-events-none aria-disabled:opacity-50
                       "
                     >
                       Ver
