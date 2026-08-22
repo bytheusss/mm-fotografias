@@ -1,0 +1,2 @@
+import PrivacyRequestManager from "@/components/admin/PrivacyRequestManager";
+export default function PrivacyAdminPage() { return <main className="min-h-screen bg-black px-4 pb-20 pt-32 text-white sm:px-6"><div className="mx-auto max-w-5xl"><h1 className="text-3xl font-black sm:text-4xl">Solicitações LGPD</h1><p className="mb-8 mt-2 text-neutral-400">Acompanhe e responda gratuitamente aos direitos dos titulares.</p><PrivacyRequestManager /></div></main>; }

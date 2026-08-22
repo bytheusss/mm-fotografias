@@ -22,6 +22,7 @@ export async function GET(
         count: "exact",
       })
       .eq("event_id", id)
+      .is("deleted_at", null)
       .order("number")
       .range(from, to);
 

@@ -7,6 +7,7 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { LatestEvents } from "@/components/home/LatestEvents";
 import { QuickSearch } from "@/components/home/QuickSearch";
 import { Testimonials } from "@/components/home/Testimonials";
+import { InstagramPreview } from "@/components/home/InstagramPreview";
 
 export default function HomePage() {
   return (
@@ -17,6 +18,7 @@ export default function HomePage() {
       <HowItWorks />
       <About />
       <Gallery />
+      <InstagramPreview />
       <Testimonials />
       <FAQ />
       <Contact />

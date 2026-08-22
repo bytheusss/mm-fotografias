@@ -1,0 +1,2 @@
+import TrashManager from "@/components/admin/TrashManager";
+export default function TrashPage() { return <main className="min-h-screen bg-black px-4 pb-20 pt-32 text-white sm:px-6"><div className="mx-auto max-w-6xl"><h1 className="text-3xl font-black sm:text-4xl">Lixeira de fotos</h1><p className="mb-8 mt-2 text-neutral-400">Fotos removidas deixam de aparecer na loja, mas continuam recuperáveis.</p><TrashManager /></div></main>; }

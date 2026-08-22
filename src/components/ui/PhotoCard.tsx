@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/Button";
 import { SafeImage } from "@/components/ui/SafeImage";
 import type { EventPhoto } from "@/types";
+import { analyticsAllowed } from "@/lib/privacy-consent";
 
 
 interface PhotoCardProps {
@@ -44,7 +45,7 @@ export function PhotoCard({
     items.some(
       item => item.id === photo.id
     );
-  function track(kind: "favorite" | "cart") { if (!photo.eventId) return; const sessionKey = localStorage.getItem("mm-session") || crypto.randomUUID(); localStorage.setItem("mm-session", sessionKey); void fetch("/api/interactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoId: photo.id, eventId: photo.eventId, kind, sessionKey }) }); }
+  function track(kind: "favorite" | "cart") { if (!photo.eventId || !analyticsAllowed()) return; const sessionKey = localStorage.getItem("mm-session") || crypto.randomUUID(); localStorage.setItem("mm-session", sessionKey); void fetch("/api/interactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photoId: photo.id, eventId: photo.eventId, kind, sessionKey }) }); }
 
 
 
@@ -97,6 +98,7 @@ export function PhotoCard({
         <span className="text-sm font-medium text-white">
           Foto #{photo.numero}
         </span>
+        {photo.photographerName && <span className="text-xs text-neutral-300">por {photo.photographerName}</span>}
 
 
 

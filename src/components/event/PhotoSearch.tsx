@@ -17,6 +17,7 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
   const pageSize = 40;
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [photographer, setPhotographer] = useState("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -25,19 +26,20 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
   const { addToCart, items } = useCart();
   function toggleSelection(id: string) { setSelected(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
 
+  const photographerOptions = useMemo(() => [...new Map(photos.filter(photo => photo.photographerId).map(photo => [photo.photographerId!, photo.photographerName || "Fotógrafo"])).entries()], [photos]);
   const filteredPhotos = useMemo(() => {
     const value = search.replace(/\D/g, "");
 
     if (!value) {
-      return [...photos].sort((a, b) => sort === "asc" ? Number(a.numero) - Number(b.numero) : Number(b.numero) - Number(a.numero));
+      return photos.filter(photo => photographer === "all" || photo.photographerId === photographer).sort((a, b) => sort === "asc" ? Number(a.numero) - Number(b.numero) : Number(b.numero) - Number(a.numero));
     }
 
-    return photos.filter((photo) => {
+    return photos.filter((photo) => photographer === "all" || photo.photographerId === photographer).filter((photo) => {
       const number = String(photo.numero).padStart(4, "0");
 
       return number.includes(value.padStart(4, "0"));
     }).sort((a, b) => sort === "asc" ? Number(a.numero) - Number(b.numero) : Number(b.numero) - Number(a.numero));
-  }, [photos, search, sort]);
+  }, [photos, search, sort, photographer]);
   const totalPages = Math.max(1, Math.ceil(filteredPhotos.length / pageSize));
   const currentPage = Math.min(totalPages, Math.max(1, Number(searchParams.get("pagina") || 1)));
   const pagePhotos = filteredPhotos.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -47,7 +49,7 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
 
   return (
     <div>
-      <div className="mb-8 flex flex-col gap-3 sm:flex-row">
+      <div className="mb-8 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_auto_auto_auto]">
         <input
           type="text"
           inputMode="numeric"
@@ -71,8 +73,9 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
             focus:outline-none
           "
         />
-        <select aria-label="Ordenação das fotos" value={sort} onChange={e => { setSort(e.target.value as "asc" | "desc"); goToPage(1); }} className="rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-white"><option value="asc">Número crescente</option><option value="desc">Número decrescente</option></select>
-        <button type="button" onClick={() => { setSelectionMode(value => !value); setSelected(new Set()); }} className={`rounded-lg px-4 py-3 font-bold ${selectionMode ? "bg-red-700" : "bg-neutral-800"}`}>{selectionMode ? "Cancelar seleção" : "Selecionar várias"}</button>
+        <select aria-label="Ordenação das fotos" value={sort} onChange={e => { setSort(e.target.value as "asc" | "desc"); goToPage(1); }} className="min-w-0 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-white"><option value="asc">Número crescente</option><option value="desc">Número decrescente</option></select>
+        {photographerOptions.length > 1 && <select aria-label="Filtrar por fotógrafo" value={photographer} onChange={event => { setPhotographer(event.target.value); goToPage(1); }} className="min-w-0 rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-3 text-white"><option value="all">Todos os fotógrafos</option>{photographerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>}
+        <button type="button" onClick={() => { setSelectionMode(value => !value); setSelected(new Set()); }} className={`whitespace-nowrap rounded-lg px-4 py-3 font-bold ${selectionMode ? "bg-red-700" : "bg-neutral-800"}`}>{selectionMode ? "Cancelar seleção" : "Selecionar várias"}</button>
       </div>
       {selectionMode && <div className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-4"><label className="text-sm text-neutral-400">Da foto<input value={rangeStart} onChange={event => setRangeStart(event.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="Ex.: 40" className="mt-1 block w-28 rounded bg-black p-2 text-white" /></label><label className="text-sm text-neutral-400">Até a foto<input value={rangeEnd} onChange={event => setRangeEnd(event.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="Ex.: 60" className="mt-1 block w-28 rounded bg-black p-2 text-white" /></label><button type="button" onClick={selectRange} className="rounded bg-neutral-700 px-4 py-2 font-bold">Selecionar intervalo</button><button type="button" onClick={() => setSelected(new Set(pagePhotos.map(photo => photo.id)))} className="rounded bg-neutral-700 px-4 py-2 font-bold">Selecionar página</button></div>}
 
@@ -87,7 +90,9 @@ export function PhotoSearch({ photos }: PhotoSearchProps) {
           className="
             grid
             grid-cols-2
-            gap-4
+            gap-2
+            sm:gap-3
+            md:gap-4
             md:grid-cols-3
             lg:grid-cols-5
           "

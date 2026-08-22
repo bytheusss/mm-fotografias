@@ -1,0 +1,3 @@
+import { requireUser } from "@/lib/auth";
+import { DataRequestForm } from "@/components/privacy/DataRequestForm";
+export default async function PrivacyAccountPage() { await requireUser("/minha-conta/privacidade"); return <main className="min-h-screen bg-black px-6 pb-20 pt-32 text-white"><div className="mx-auto max-w-3xl"><h1 className="text-4xl font-black">Meus dados e LGPD</h1><p className="mb-8 mt-3 text-neutral-400">Solicite acesso, correção, portabilidade, revogação ou exclusão. Algumas informações de pedidos podem precisar ser mantidas por obrigação legal.</p><DataRequestForm /></div></main>; }

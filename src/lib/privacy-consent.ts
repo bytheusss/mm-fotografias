@@ -1,0 +1,1 @@
+export function analyticsAllowed() { if (typeof window === "undefined") return false; try { return Boolean(JSON.parse(localStorage.getItem("mm-cookie-preferences-v1") || "null")?.analytics); } catch { return false; } }

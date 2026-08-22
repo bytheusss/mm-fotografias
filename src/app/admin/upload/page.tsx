@@ -11,8 +11,11 @@ export default function UploadPage() {
   const [message,setMessage] = useState("");
   const [progress,setProgress] = useState(0);
   const [events,setEvents] = useState<Array<{ id: string; name: string; slug: string; archived: boolean }>>([]);
+  const [photographers,setPhotographers] = useState<Array<{ id: string; name: string }>>([]);
+  const [photographerId,setPhotographerId] = useState("");
 
   useEffect(() => { const timer = window.setTimeout(async () => { const selected = new URLSearchParams(window.location.search).get("event") || ""; const response = await fetch("/api/admin/events"); const data = await response.json(); setEvents(data.events || []); setEventId(selected); }, 0); return () => window.clearTimeout(timer); }, []);
+  useEffect(() => { if (!eventId) { setPhotographers([]); return; } fetch(`/api/admin/events/${eventId}/photographers`).then(response => response.json()).then(data => setPhotographers(data.photographers || [])).catch(() => setPhotographers([])); setPhotographerId(""); }, [eventId]);
 
 
   async function handleUpload(){
@@ -37,7 +40,7 @@ export default function UploadPage() {
         const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
         if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
-        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum }), signal: AbortSignal.timeout(90000) });
+        const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum, photographerId: photographerId || null }), signal: AbortSignal.timeout(90000) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
         sent += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`);
       }
@@ -108,6 +111,7 @@ export default function UploadPage() {
               e=>setEventId(e.target.value)
             }
           ><option value="">Selecione o evento</option>{events.filter(event => !event.archived).map(event => <option key={event.id} value={event.id}>{event.name} ({event.slug})</option>)}</select>
+          {photographers.length > 0 && <><label className="mb-2 block">Fotógrafo responsável</label><select value={photographerId} onChange={event => setPhotographerId(event.target.value)} className="mb-5 w-full rounded-lg bg-neutral-800 p-3"><option value="">Não informado / equipe M&M</option>{photographers.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></>}
 
 
           <label className="block mb-2">

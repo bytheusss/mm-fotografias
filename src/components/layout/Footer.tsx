@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FOOTER_LINKS } from "@/lib/constants/navigation";
 import { SITE } from "@/lib/constants/site";
 import { Container } from "@/components/ui/Container";
+import { CookieSettingsButton } from "@/components/privacy/CookiePreferences";
 
 function InstagramIcon() {
   return (
@@ -131,6 +132,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
+          <div className="mb-4 flex flex-wrap justify-center gap-5"><Link href="/privacidade" className="text-sm text-muted hover:text-white">LGPD e Privacidade</Link><CookieSettingsButton /></div>
           <p className="text-center text-xs text-muted">
             &copy; {currentYear} {SITE.name}. Todos os direitos reservados.
           </p>

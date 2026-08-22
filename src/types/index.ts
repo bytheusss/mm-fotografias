@@ -31,6 +31,8 @@ export interface EventPhoto {
   preco: number;
   status: PhotoStatus;
   salesPaused?: boolean;
+  photographerId?: string | null;
+  photographerName?: string | null;
 }
 
 export interface HowItWorksStep {

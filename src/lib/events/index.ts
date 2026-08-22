@@ -48,7 +48,7 @@ export const getEventPhotos = cache(
     const event = await getEventBySlug(slug);
     if (!event) return [];
     const supabase = await createClient();
-    const { data: files, error } = await supabaseAdmin.from("photos").select("id,number,price,status,thumbnail_path").eq("event_id", event.id).order("number", { ascending: true });
+    const { data: files, error } = await supabaseAdmin.from("photos").select("id,number,price,status,thumbnail_path,photographer_id,profiles!photos_photographer_id_fkey(full_name)").eq("event_id", event.id).is("deleted_at", null).order("number", { ascending: true });
 
 
 
@@ -139,6 +139,8 @@ export const getEventPhotos = cache(
             status:
               "available",
             salesPaused: event.salesPaused,
+            photographerId: file.photographer_id,
+            photographerName: Array.isArray(file.profiles) ? file.profiles[0]?.full_name : (file.profiles as { full_name?: string } | null)?.full_name || null,
 
 
           } as EventPhoto;

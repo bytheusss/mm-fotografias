@@ -6,6 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { PromoBanner } from "@/components/layout/PromoBanner";
 import { SITE } from "@/lib/constants/site";
 import { CartProvider } from "@/context/CartContext";
+import { CookiePreferences } from "@/components/privacy/CookiePreferences";
 
 import "./globals.css";
 
@@ -63,7 +64,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
 
-      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+      <body className="flex min-h-full flex-col overflow-x-clip bg-background font-sans text-foreground">
 
         <CartProvider>
 
@@ -75,6 +76,7 @@ export default function RootLayout({
           </main>
 
           <Footer />
+          <CookiePreferences />
 
         </CartProvider>
 

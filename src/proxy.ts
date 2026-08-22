@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
     const photographerRoute = request.nextUrl.pathname.startsWith("/api/photographer");
-    if (profile?.role !== "admin" && !(photographerRoute && profile?.role === "photographer")) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    if (!["owner", "admin"].includes(profile?.role || "") && !(photographerRoute && profile?.role === "photographer")) return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
   return response;
 }

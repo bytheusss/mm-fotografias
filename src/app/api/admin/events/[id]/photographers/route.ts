@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; const { data } = await supabaseAdmin.from("event_photographers").select("photographer_id,profiles(full_name,email)").eq("event_id", id); return NextResponse.json({ photographers: (data || []).map(row => ({ id: row.photographer_id, name: Array.isArray(row.profiles) ? row.profiles[0]?.full_name || row.profiles[0]?.email : (row.profiles as { full_name?: string; email?: string } | null)?.full_name || (row.profiles as { email?: string } | null)?.email })) }); }

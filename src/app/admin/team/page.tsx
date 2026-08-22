@@ -1,0 +1,2 @@
+import TeamManager from "@/components/admin/TeamManager";
+export default function TeamPage() { return <main className="min-h-screen bg-black px-4 pb-20 pt-32 text-white sm:px-6"><div className="mx-auto max-w-6xl"><h1 className="text-3xl font-black sm:text-4xl">Equipe e permissões</h1><p className="mb-8 mt-2 text-neutral-400">Somente o proprietário pode promover administradores ou alterar cargos.</p><TeamManager /></div></main>; }

@@ -55,7 +55,7 @@ export default async function EventoPage({
               {event.photoCount} FOTOS
             </span>
 
-            <h1 className="mt-5 text-5xl font-bold">
+            <h1 className="mt-5 break-words text-3xl font-bold sm:text-4xl lg:text-5xl">
               {event.name}
             </h1>
 
