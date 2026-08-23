@@ -11,7 +11,8 @@ async function watermarkLogo(width: number) {
 function protectionLayer(width: number, height: number, label = "") {
   const safeLabel = label.replace(/[^a-zA-Z0-9 #_-]/g, "");
   const fontSize = Math.max(24, Math.round(width * 0.032));
-  const text = `M&M FOTOGRAFIAS ${safeLabel}`.trim();
+  // This string is injected into SVG/XML, where a bare ampersand is invalid.
+  const text = `M&amp;M FOTOGRAFIAS ${safeLabel}`.trim();
   const rows = [0.18, 0.42, 0.66, 0.9].map((position) =>
     [0.12, 0.48, 0.84].map((x) => `<text x="${Math.round(width * x)}" y="${Math.round(height * position)}" text-anchor="middle" transform="rotate(-22 ${Math.round(width * x)} ${Math.round(height * position)})">${text}</text>`).join(""),
   ).join("");
