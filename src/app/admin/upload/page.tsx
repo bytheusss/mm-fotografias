@@ -28,26 +28,27 @@ export default function UploadPage() {
     if(!eventId){ alert("Selecione o evento"); return; }
 
     setLoading(true);
-    setMessage(""); setProgress(0); let sent = 0; let skipped = 0; let processed = 0;
-    try {
-      for (const file of files) {
+    setMessage(""); setProgress(0); let sent = 0; let skipped = 0; let processed = 0; const failed: File[] = []; const errors: string[] = [];
+    for (const file of files) {
+      try {
         setMessage(`${sent} de ${files.length} · preparando ${file.name}`);
         const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); const checksum = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
         const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type, checksum }), signal: AbortSignal.timeout(30000) });
         const signed = await signedResponse.json().catch(() => ({}));
         if (signedResponse.status === 409) { skipped += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`); continue; }
-        if (!signedResponse.ok) throw new Error(signed.error || `Erro ao preparar ${file.name}`);
+        if (!signedResponse.ok) throw new Error(signed.error || "erro ao preparar");
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
         const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
         if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
         const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum, photographerId: photographerId || null, category }), signal: AbortSignal.timeout(90000) });
-        const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || `Erro em ${file.name}`);
+        const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "erro ao processar");
         sent += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`);
+      } catch (error) {
+        failed.push(file); errors.push(`${file.name}: ${error instanceof Error ? error.message : "erro desconhecido"}`); processed += 1; setProgress(Math.round(processed / files.length * 100));
       }
-      setMessage(`${sent} fotos enviadas com proteção; ${skipped} duplicadas ignoradas.`); setFiles([]);
-    } catch (error) { setFiles(current => current.slice(processed)); setMessage(`${sent} enviadas e ${skipped} duplicadas. Restantes mantidas para tentar novamente. ${error instanceof Error ? error.message : "Erro no upload"}`); }
-    finally { setLoading(false); }
+    }
+    setFiles(failed); setMessage(failed.length ? `${sent} enviadas · ${skipped} duplicadas · ${failed.length} com erro. Mantidas para tentar novamente:\n${errors.slice(0, 8).join("\n")}${errors.length > 8 ? `\n+${errors.length - 8} erros` : ""}` : `${sent} fotos enviadas com proteção; ${skipped} duplicadas ignoradas.`); setLoading(false);
 
   }
 

@@ -22,4 +22,4 @@ export async function requireAdmin() {
   return user;
 }
 
-export async function requireStaff() { const user = await requireUser("/fotografo"); const supabase = await createClient(); const { data } = await supabase.from("profiles").select("role,roles").eq("id", user.id).maybeSingle(); if (!hasRole(data, ["owner", "admin", "photographer"])) redirect("/"); return { user, role: data?.role as "owner" | "admin" | "photographer", roles: allRoles(data) }; }
+export async function requireStaff() { const user = await requireUser("/fotografo"); const supabase = await createClient(); const { data } = await supabase.from("profiles").select("role,roles").eq("id", user.id).maybeSingle(); if (!hasRole(data, ["owner", "admin", "support", "photographer"])) redirect("/"); return { user, role: data?.role as "owner" | "admin" | "support" | "photographer", roles: allRoles(data) }; }
