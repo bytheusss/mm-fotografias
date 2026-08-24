@@ -10,8 +10,9 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const number = raw?.padStart(4, "0");
   let query = supabaseAdmin
     .from("photos")
-    .select("id,number,thumbnail_path,event_id,status,plate_text,events!inner(slug,name,published)")
-    .eq("events.published", true);
+    .select("id,number,thumbnail_path,event_id,status,plate_text,events!inner(slug,name,published,access_mode)")
+    .eq("events.published", true)
+    .eq("events.access_mode", "public");
   query = number ? query.eq("number", Number(number)) : query.ilike("plate_text", `%${plate}%`);
   const { data: photos } = await query;
 

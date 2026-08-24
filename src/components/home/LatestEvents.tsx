@@ -1,4 +1,3 @@
-import { LATEST_EVENTS } from "@/lib/constants/mock-data";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -8,8 +7,9 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function LatestEvents() {
-  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image,archived,published").eq("published", true).eq("archived", false).order("event_date", { ascending: false }).limit(6);
-  const events = data?.length ? data.map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image })) : LATEST_EVENTS;
+  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image").eq("published", true).eq("archived", false).eq("access_mode", "public").order("event_date", { ascending: false }).limit(6);
+  const events = (data || []).map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image }));
+  if (!events.length) return null;
   return (
     <section id="eventos" className="bg-background py-20 md:py-28">
       <Container>
