@@ -1,0 +1,16 @@
+create table if not exists public.support_tickets(
+ channel text primary key, client_id uuid references public.profiles(id) on delete set null,
+ subject text not null default 'Atendimento pelo site', status text not null default 'waiting' check(status in('waiting','in_progress','resolved','reopened')),
+ priority text not null default 'normal' check(priority in('low','normal','high','urgent')), assigned_to uuid references public.profiles(id) on delete set null,
+ summary text, last_message_at timestamptz not null default now(), resolved_at timestamptz, rating integer check(rating between 1 and 5), feedback text,
+ created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create index if not exists support_tickets_queue_idx on public.support_tickets(status,priority,last_message_at desc);
+create table if not exists public.support_quick_replies(id uuid primary key default gen_random_uuid(),title text not null,body text not null,active boolean not null default true,created_at timestamptz not null default now());
+create table if not exists public.support_knowledge(id uuid primary key default gen_random_uuid(),title text not null,content text not null,active boolean not null default true,updated_at timestamptz not null default now());
+create table if not exists public.ai_support_usage(id uuid primary key default gen_random_uuid(),user_id uuid references public.profiles(id) on delete set null,model text not null,success boolean not null,latency_ms integer,question_chars integer,answer_chars integer,created_at timestamptz not null default now());
+create table if not exists public.chat_read_state(channel text not null,user_id uuid not null references public.profiles(id) on delete cascade,last_read_at timestamptz not null default now(),primary key(channel,user_id));
+alter table public.support_tickets enable row level security; alter table public.support_quick_replies enable row level security; alter table public.support_knowledge enable row level security; alter table public.ai_support_usage enable row level security; alter table public.chat_read_state enable row level security;
+revoke all on public.support_tickets,public.support_quick_replies,public.support_knowledge,public.ai_support_usage,public.chat_read_state from anon,authenticated;
+insert into public.support_quick_replies(title,body) select * from (values ('Pedido recebido','Recebemos sua solicitação e já estamos verificando. Retornaremos por aqui.'),('Pagamento','A confirmação do pagamento pode levar alguns minutos. Não envie senha, código PIX ou dados do cartão.'),('Download','Após a aprovação do pagamento, o download fica disponível em Minha Conta → Meus pedidos.')) as seed(title,body) where not exists(select 1 from public.support_quick_replies);
+insert into public.support_knowledge(title,content) select * from (values ('Compra de fotos','O cliente escolhe um evento, adiciona fotos ao carrinho, finaliza os dados e paga pelo checkout. Após aprovação, os originais ficam em Minha Conta.'),('Segurança','A M&M nunca solicita senha, código PIX, número completo do cartão ou documento pelo chat.'),('Privacidade','Solicitações de acesso, correção ou exclusão de dados ficam disponíveis na área de privacidade/LGPD do site.')) as seed(title,content) where not exists(select 1 from public.support_knowledge);

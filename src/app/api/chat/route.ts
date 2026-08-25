@@ -42,8 +42,10 @@ export async function GET(request:Request){
   if(!ctx.channel)return NextResponse.json({messages:[],people:ctx.people,me:me.user.id,roles:me.roles,channel:""});
   const {data:messages,error}=await supabaseAdmin.from("chat_messages").select("id,channel,sender_id,recipient_id,body,read_at,created_at,profiles!chat_messages_sender_id_fkey(full_name,email)").eq("channel",ctx.channel).order("created_at").limit(200);
   if(error)return NextResponse.json({error:error.message},{status:400});
-  await supabaseAdmin.from("chat_messages").update({read_at:new Date().toISOString()}).eq("channel",ctx.channel).eq("recipient_id",me.user.id).is("read_at",null);
-  return NextResponse.json({messages:messages||[],people:ctx.people,me:me.user.id,roles:me.roles,channel:ctx.channel},{headers:{"Cache-Control":"private, no-store"}});
+  const readAt=new Date().toISOString();
+  await Promise.all([supabaseAdmin.from("chat_messages").update({read_at:readAt}).eq("channel",ctx.channel).eq("recipient_id",me.user.id).is("read_at",null),supabaseAdmin.from("chat_read_state").upsert({channel:ctx.channel,user_id:me.user.id,last_read_at:readAt})]);
+  const {data:ticket}=mode==="support"?await supabaseAdmin.from("support_tickets").select("status,priority,assigned_to,rating,feedback").eq("channel",ctx.channel).maybeSingle():{data:null};
+  return NextResponse.json({messages:messages||[],people:ctx.people,me:me.user.id,roles:me.roles,channel:ctx.channel,ticket},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:Request){
@@ -55,6 +57,7 @@ export async function POST(request:Request){
   else if(mode==="support")recipient=me.management?other:null;
   const {data:created,error}=await supabaseAdmin.from("chat_messages").insert({channel:ctx.channel,sender_id:me.user.id,recipient_id:recipient,body:text}).select("id,channel,sender_id,recipient_id,body,read_at,created_at").single();
   if(error)return NextResponse.json({error:error.message},{status:400});
+  if(mode==="support"){const{data:ticket}=await supabaseAdmin.from("support_tickets").select("status,assigned_to").eq("channel",ctx.channel).maybeSingle();const nextStatus=me.management?"in_progress":ticket?.status==="resolved"?"reopened":ticket?.status||"waiting";await supabaseAdmin.from("support_tickets").upsert({channel:ctx.channel,client_id:me.management?other:me.user.id,status:nextStatus,assigned_to:me.management?me.user.id:ticket?.assigned_to||null,last_message_at:created.created_at,updated_at:created.created_at},{onConflict:"channel"});}
   let recipients:string[]=[];
   if(recipient)recipients=[recipient];
   else if(mode==="support"){
