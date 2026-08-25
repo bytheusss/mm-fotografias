@@ -39,13 +39,14 @@ export async function GET(request:Request){
   const me=await actor();if(!me)return NextResponse.json({error:"Não autenticado"},{status:401});
   const q=new URL(request.url).searchParams,mode=q.get("mode")||"support",other=q.get("other")||"",ctx=await context(me,mode,other);
   if(!ctx)return NextResponse.json({error:"Acesso negado"},{status:403});
-  if(!ctx.channel)return NextResponse.json({messages:[],people:ctx.people,me:me.user.id,roles:me.roles,channel:""});
+  if(!ctx.channel)return NextResponse.json({messages:[],people:ctx.people,me:me.user.id,roles:me.roles,channel:"",quickReplies:[]});
   const {data:messages,error}=await supabaseAdmin.from("chat_messages").select("id,channel,sender_id,recipient_id,body,read_at,created_at,profiles!chat_messages_sender_id_fkey(full_name,email)").eq("channel",ctx.channel).order("created_at").limit(200);
   if(error)return NextResponse.json({error:error.message},{status:400});
   const readAt=new Date().toISOString();
   await Promise.all([supabaseAdmin.from("chat_messages").update({read_at:readAt}).eq("channel",ctx.channel).eq("recipient_id",me.user.id).is("read_at",null),supabaseAdmin.from("chat_read_state").upsert({channel:ctx.channel,user_id:me.user.id,last_read_at:readAt})]);
   const {data:ticket}=mode==="support"?await supabaseAdmin.from("support_tickets").select("status,priority,assigned_to,rating,feedback").eq("channel",ctx.channel).maybeSingle():{data:null};
-  return NextResponse.json({messages:messages||[],people:ctx.people,me:me.user.id,roles:me.roles,channel:ctx.channel,ticket},{headers:{"Cache-Control":"private, no-store"}});
+  const {data:quickReplies}=me.management?await supabaseAdmin.from("support_quick_replies").select("id,title,body").eq("active",true).order("title"):{data:[]};
+  return NextResponse.json({messages:messages||[],people:ctx.people,me:me.user.id,roles:me.roles,channel:ctx.channel,ticket,quickReplies:quickReplies||[]},{headers:{"Cache-Control":"private, no-store"}});
 }
 
 export async function POST(request:Request){

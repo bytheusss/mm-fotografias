@@ -10,6 +10,8 @@ import {
 
 import type { EventPhoto } from "@/types";
 import { calculatePrice, DEFAULT_PRICING_PACKAGES, type PricingPackage } from "@/lib/pricing";
+import { createClient } from "@/lib/supabase/client";
+import type { RealtimePostgresChangesPayload, User } from "@supabase/supabase-js";
 
 
 interface CartContextProps {
@@ -50,6 +52,12 @@ const CartContext =
 const CART_KEY = "mm-fotografias-cart";
 const FAVORITES_KEY = "mm-fotografias-favorites";
 
+const uniquePhotos = (...lists: EventPhoto[][]) => {
+  const result = new Map<string, EventPhoto>();
+  for (const photo of lists.flat()) if (photo?.id) result.set(photo.id, photo);
+  return [...result.values()];
+};
+
 
 
 export function CartProvider({
@@ -65,6 +73,8 @@ export function CartProvider({
   const [favorites, setFavorites] = useState<EventPhoto[]>([]);
   const [pricingPackages, setPricingPackages] = useState<PricingPackage[]>(DEFAULT_PRICING_PACKAGES);
   const [eventPricing, setEventPricing] = useState<Record<string, PricingPackage[]>>({});
+  const [hydrated, setHydrated] = useState(false);
+  const [accountSync, setAccountSync] = useState(false);
 
 
 
@@ -95,8 +105,34 @@ export function CartProvider({
     }
 
     try { setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { localStorage.removeItem(FAVORITES_KEY); }
+    setHydrated(true);
 
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    let active = true;
+    const applyRemote = (state: { cart?: EventPhoto[]; favorites?: EventPhoto[] }, merge = false) => {
+      if (!active) return;
+      setItems(current => merge ? uniquePhotos(current, state.cart || []) : (state.cart || []));
+      setFavorites(current => merge ? uniquePhotos(current, state.favorites || []) : (state.favorites || []));
+    };
+    fetch("/api/account/sync", { cache: "no-store" }).then(r => r.json()).then(data => {
+      if (!active || !data.authenticated) return;
+      setAccountSync(true);
+      applyRemote(data.state || {}, true);
+    }).catch(() => undefined);
+    const supabase = createClient();
+    let room: ReturnType<typeof supabase.channel> | null = null;
+    supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
+      if (!active || !data.user) return;
+      room = supabase.channel(`account-sync:${data.user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "account_sync_state", filter: `user_id=eq.${data.user.id}` }, (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => applyRemote((payload.new || {}) as { cart?: EventPhoto[]; favorites?: EventPhoto[] })).subscribe();
+    });
+    const refresh = () => { if (document.visibilityState === "visible") fetch("/api/account/sync", { cache: "no-store" }).then(r => r.json()).then(data => data.authenticated && applyRemote(data.state || {})).catch(() => undefined); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { active = false; window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); if (room) void supabase.removeChannel(room); };
+  }, [hydrated]);
 
   useEffect(() => { fetch("/api/pricing").then(response => response.json()).then(data => { if (data.packages?.length) setPricingPackages(data.packages); }).catch(() => undefined); }, []);
   const eventIdsKey = [...new Set(items.map(item => item.eventId).filter(Boolean))].sort().join(",");
@@ -117,6 +153,12 @@ export function CartProvider({
   }, [items]);
 
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
+
+  useEffect(() => {
+    if (!hydrated || !accountSync) return;
+    const timer = window.setTimeout(() => { void fetch("/api/account/sync", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cart: items, favorites }) }); }, 450);
+    return () => window.clearTimeout(timer);
+  }, [items, favorites, hydrated, accountSync]);
 
   function toggleFavorite(photo: EventPhoto) {
     setFavorites(current => current.some(item => item.id === photo.id) ? current.filter(item => item.id !== photo.id) : [...current, photo]);
