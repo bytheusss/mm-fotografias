@@ -159,6 +159,22 @@ export async function POST(
 
     }
 
+    if (String(externalReference).startsWith("service:")) {
+      const servicePaymentId = String(externalReference).slice(8);
+      const { data: servicePayment, error: serviceError } = await supabaseAdmin.from("service_payments").update({ status: "approved", provider_reference: String(payment.id), paid_at: new Date().toISOString() }).eq("id", servicePaymentId).select("id,amount,proposal_id,service_proposals(request_id)").single();
+      if (!serviceError && servicePayment) {
+        const proposalRelation = Array.isArray(servicePayment.service_proposals) ? servicePayment.service_proposals[0] : servicePayment.service_proposals;
+        const requestId = proposalRelation?.request_id;
+        if (requestId) await supabaseAdmin.from("service_requests").update({ status: "booked", updated_at: new Date().toISOString() }).eq("id", requestId);
+        const { data: job } = await supabaseAdmin.from("service_jobs").select("id,paid_amount").eq("proposal_id",servicePayment.proposal_id).maybeSingle();
+        if(job) await supabaseAdmin.from("service_jobs").update({paid_amount:Number(job.paid_amount||0)+Number(servicePayment.amount),updated_at:new Date().toISOString()}).eq("id",job.id);
+        const { data: team } = await supabaseAdmin.from("profiles").select("id,role,roles");
+        const managers = (team || []).filter(person => allRoles(person).some(role => ["owner","admin","support"].includes(role)));
+        await Promise.all(managers.map(person => sendPush(person.id,{title:"Sinal de contratação confirmado 💍",body:`Pagamento de ${Number(servicePayment.amount).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})} aprovado.`,href:"/admin/studio"}).catch(()=>undefined)));
+      }
+      return NextResponse.json({ success: !serviceError });
+    }
+
 
 
 
