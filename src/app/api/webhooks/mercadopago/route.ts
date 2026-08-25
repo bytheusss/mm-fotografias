@@ -10,6 +10,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { sendPurchaseEmail } from "@/lib/email";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import { sendPush } from "@/lib/push";
+import {allRoles} from "@/lib/roles";
 
 
 const client = new MercadoPagoConfig({
@@ -237,6 +238,9 @@ export async function POST(
     if (!error && order && order.status !== "paid") {
       await sendWhatsApp({ to: order.whatsapp, text: `Pagamento confirmado! Seu pedido #${String(externalReference).slice(0,8).toUpperCase()} está disponível em ${process.env.NEXT_PUBLIC_SITE_URL}/download/${token}` }).catch(whatsappError => console.error("WHATSAPP ERROR", whatsappError));
       if(order.user_id){const notice={title:"Pagamento confirmado 🎉",body:`Seu pedido #${String(externalReference).slice(0,8).toUpperCase()} já está disponível para download.`,href:`/minha-conta/pedido/${externalReference}`};await supabaseAdmin.from("client_notifications").insert({user_id:order.user_id,...notice});await sendPush(order.user_id,notice).catch(pushError=>console.error("PUSH ERROR",pushError))}
+      const saleNotice={title:"Nova venda confirmada 💰",body:`${order.name||"Cliente"} · pedido #${String(externalReference).slice(0,8).toUpperCase()} · ${Number(order.total||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}`,href:`/admin/orders/${externalReference}`};
+      const{data:team}=await supabaseAdmin.from("profiles").select("id,role,roles");const managers=(team||[]).filter(person=>allRoles(person).some(role=>["owner","admin","support"].includes(role)));
+      await Promise.all(managers.map(async person=>{await supabaseAdmin.from("team_notifications").insert({user_id:person.id,...saleNotice});return sendPush(person.id,saleNotice).catch(pushError=>console.error("SALE PUSH ERROR",pushError))}));
     }
 
 
