@@ -4,7 +4,7 @@ import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 
 const groups=[
- ["GERAL",[["⌂","Visão geral","/admin"],["💬","Atendimento","/fotografo/atendimento"],["◉","Métricas","/admin/analytics"]]],
+ ["GERAL",[["⌂","Visão geral","/admin"],["✦","Inteligência V18","/admin/intelligence"],["💬","Atendimento","/fotografo/atendimento"],["◉","Métricas","/admin/analytics"]]],
  ["CONTEÚDO",[["▣","Eventos","/admin/events"],["↑","Upload","/admin/upload"],["♟","Fotógrafos","/admin/collaborators"],["◆","Estúdio da equipe","/admin/creator-ops"],["▥","Relatório da equipe","/admin/photographer-report"],["⇩","CSV da equipe","/api/admin/reports/photographers.csv"],["♜","Equipe","/admin/team"]]],
  ["VENDAS",[["▤","Pedidos","/admin/orders"],["◴","Carrinhos","/admin/abandoned-carts"],["↗","Financeiro","/admin/finance"],["◎","Repasses","/admin/payouts"]]],
  ["MARKETING",[["$","Pacotes","/admin/pricing"],["%","Cupons","/admin/coupons"],["★","Promoção","/admin/promotion"],["✦","Avaliações","/admin/reviews"]]],

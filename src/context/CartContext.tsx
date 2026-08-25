@@ -114,6 +114,7 @@ export function CartProvider({
     try { setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { localStorage.removeItem(FAVORITES_KEY); }
     try { setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]")); } catch { localStorage.removeItem(RECENT_KEY); }
     setHydrated(true);
+    const deviceKey=localStorage.getItem("mm-device-key")||crypto.randomUUID();localStorage.setItem("mm-device-key",deviceKey);void fetch("/api/account/devices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({deviceKey,label:/Mobi|Android/i.test(navigator.userAgent)?"Celular / PWA":"Computador"})});
 
   }, []);
 

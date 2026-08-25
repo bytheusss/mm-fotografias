@@ -15,7 +15,10 @@ export async function POST(request: Request) {
     if (!name || !/^\S+@\S+\.\S+$/.test(email) || !items.length || items.length > 100) return NextResponse.json({ error: "Confira nome, e-mail e itens do carrinho." }, { status: 400 });
     const user = await getApiUser(); if (user?.email && user.email.toLowerCase() !== email) return NextResponse.json({ error: "Use o e-mail da sua conta." }, { status: 400 });
     const pricing = await getCartPricing(items); const coupon = await applyCoupon(body.couponCode, pricing.total, items.map((item: { slug?: unknown }) => String(item.slug || ""))); const total = coupon.total;
-    const { data: order, error } = await supabaseAdmin.from("orders").insert({ name, email, whatsapp: String(body.whatsapp || ""), photos: items, total, coupon_code: coupon.code, discount_amount: coupon.discount, status: "pending", user_id: user?.id || null }).select("id").single();
+    const campaignId=request.headers.get("cookie")?.match(/(?:^|;\s*)mm_campaign=([^;]+)/)?.[1]||null;
+    const { data: campaign }=campaignId?await supabaseAdmin.from("marketing_campaigns").select("id,source,active,expires_at").eq("id",decodeURIComponent(campaignId)).maybeSingle():{data:null};
+    const validCampaign=campaign?.active&&(!campaign.expires_at||new Date(campaign.expires_at)>new Date())?campaign:null;
+    const { data: order, error } = await supabaseAdmin.from("orders").insert({ name, email, whatsapp: String(body.whatsapp || ""), photos: items, total, coupon_code: coupon.code, discount_amount: coupon.discount, status: "pending", user_id: user?.id || null, campaign_id:validCampaign?.id||null, acquisition_source:validCampaign?.source||null }).select("id").single();
     if (error || !order) throw error || new Error("Pedido não criado");
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const preference = await new Preference(client).create({ body: {
