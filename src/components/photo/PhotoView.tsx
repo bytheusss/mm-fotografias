@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import Image from "next/image";
 import Link from "next/link";
+import {useEffect} from "react";
 
 import type { EventPhoto } from "@/types";
 
@@ -23,7 +24,10 @@ export function PhotoView({
   const {
     addToCart,
     items,
+    recordViewed,
   } = useCart();
+
+  useEffect(()=>recordViewed(photo),[photo,recordViewed]);
 
 
 
@@ -101,7 +105,7 @@ export function PhotoView({
 
 
             <p className="mt-2 text-neutral-400">
-              Encontro AACRC
+              {photo.evento}
             </p>
 
 
@@ -113,7 +117,7 @@ export function PhotoView({
 
 
             <span className="text-3xl font-bold">
-              R$ 15,00
+              {photo.preco.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}
             </span>
 
 

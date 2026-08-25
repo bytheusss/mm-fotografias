@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useState,
   ReactNode,
@@ -38,6 +39,10 @@ interface CartContextProps {
 
   toggleFavorite: (photo: EventPhoto) => void;
 
+  recent: EventPhoto[];
+
+  recordViewed: (photo: EventPhoto) => void;
+
 }
 
 
@@ -51,6 +56,7 @@ const CartContext =
 
 const CART_KEY = "mm-fotografias-cart";
 const FAVORITES_KEY = "mm-fotografias-favorites";
+const RECENT_KEY = "mm-fotografias-recent";
 
 const uniquePhotos = (...lists: EventPhoto[][]) => {
   const result = new Map<string, EventPhoto>();
@@ -71,6 +77,7 @@ export function CartProvider({
     useState<EventPhoto[]>([]);
 
   const [favorites, setFavorites] = useState<EventPhoto[]>([]);
+  const [recent, setRecent] = useState<EventPhoto[]>([]);
   const [pricingPackages, setPricingPackages] = useState<PricingPackage[]>(DEFAULT_PRICING_PACKAGES);
   const [eventPricing, setEventPricing] = useState<Record<string, PricingPackage[]>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -105,6 +112,7 @@ export function CartProvider({
     }
 
     try { setFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); } catch { localStorage.removeItem(FAVORITES_KEY); }
+    try { setRecent(JSON.parse(localStorage.getItem(RECENT_KEY) || "[]")); } catch { localStorage.removeItem(RECENT_KEY); }
     setHydrated(true);
 
   }, []);
@@ -112,10 +120,11 @@ export function CartProvider({
   useEffect(() => {
     if (!hydrated) return;
     let active = true;
-    const applyRemote = (state: { cart?: EventPhoto[]; favorites?: EventPhoto[] }, merge = false) => {
+    const applyRemote = (state: { cart?: EventPhoto[]; favorites?: EventPhoto[]; recent?: EventPhoto[] }, merge = false) => {
       if (!active) return;
       setItems(current => merge ? uniquePhotos(current, state.cart || []) : (state.cart || []));
       setFavorites(current => merge ? uniquePhotos(current, state.favorites || []) : (state.favorites || []));
+      setRecent(current => (merge ? uniquePhotos(state.recent || [], current) : (state.recent || [])).slice(0, 100));
     };
     fetch("/api/account/sync", { cache: "no-store" }).then(r => r.json()).then(data => {
       if (!active || !data.authenticated) return;
@@ -126,7 +135,7 @@ export function CartProvider({
     let room: ReturnType<typeof supabase.channel> | null = null;
     supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
       if (!active || !data.user) return;
-      room = supabase.channel(`account-sync:${data.user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "account_sync_state", filter: `user_id=eq.${data.user.id}` }, (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => applyRemote((payload.new || {}) as { cart?: EventPhoto[]; favorites?: EventPhoto[] })).subscribe();
+      room = supabase.channel(`account-sync:${data.user.id}`).on("postgres_changes", { event: "*", schema: "public", table: "account_sync_state", filter: `user_id=eq.${data.user.id}` }, (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => applyRemote((payload.new || {}) as { cart?: EventPhoto[]; favorites?: EventPhoto[]; recent?: EventPhoto[] })).subscribe();
     });
     const refresh = () => { if (document.visibilityState === "visible") fetch("/api/account/sync", { cache: "no-store" }).then(r => r.json()).then(data => data.authenticated && applyRemote(data.state || {})).catch(() => undefined); };
     window.addEventListener("focus", refresh);
@@ -153,16 +162,21 @@ export function CartProvider({
   }, [items]);
 
   useEffect(() => { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites)); }, [favorites]);
+  useEffect(() => { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); }, [recent]);
 
   useEffect(() => {
     if (!hydrated || !accountSync) return;
-    const timer = window.setTimeout(() => { void fetch("/api/account/sync", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cart: items, favorites }) }); }, 450);
+    const timer = window.setTimeout(() => { void fetch("/api/account/sync", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cart: items, favorites, recent }) }); }, 450);
     return () => window.clearTimeout(timer);
-  }, [items, favorites, hydrated, accountSync]);
+  }, [items, favorites, recent, hydrated, accountSync]);
 
   function toggleFavorite(photo: EventPhoto) {
     setFavorites(current => current.some(item => item.id === photo.id) ? current.filter(item => item.id !== photo.id) : [...current, photo]);
   }
+
+  const recordViewed = useCallback((photo: EventPhoto) => {
+    setRecent(current => [photo, ...current.filter(item => item.id !== photo.id)].slice(0, 100));
+  }, []);
 
 
 
@@ -284,6 +298,8 @@ export function CartProvider({
         nextDiscount,
         favorites,
         toggleFavorite,
+        recent,
+        recordViewed,
       }}
 
     >

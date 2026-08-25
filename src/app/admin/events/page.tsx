@@ -39,7 +39,7 @@ export default async function EventsAdminPage(){
         className="
           max-w-6xl
           mx-auto
-          px-6
+          px-4 sm:px-6
         "
       >
 
@@ -47,15 +47,15 @@ export default async function EventsAdminPage(){
         <div
           className="
             flex
-            justify-between
-            items-center
+            flex-wrap justify-between
+            items-center gap-4
             mb-10
           "
         >
 
           <h1
             className="
-              text-4xl
+              text-3xl sm:text-4xl
               font-bold
             "
           >
@@ -99,10 +99,10 @@ export default async function EventsAdminPage(){
                     border
                     border-neutral-800
                     rounded-xl
-                    p-6
+                    p-4 sm:p-6
                     flex
-                    justify-between
-                    items-center
+                    flex-col sm:flex-row justify-between
+                    items-stretch sm:items-center gap-5
                   "
                 >
 
@@ -111,8 +111,9 @@ export default async function EventsAdminPage(){
                   <div
                     className="
                       flex
-                      gap-5
+                      gap-3 sm:gap-5
                       items-center
+                      min-w-0
                     "
                   >
 
@@ -122,8 +123,7 @@ export default async function EventsAdminPage(){
                       src={event.cover_image}
                       alt={event.name}
                       className="
-                        w-28
-                        h-28
+                        w-20 h-20 sm:w-28 sm:h-28 shrink-0
                         object-cover
                         rounded-xl
                       "
@@ -131,12 +131,12 @@ export default async function EventsAdminPage(){
 
 
 
-                    <div>
+                    <div className="min-w-0">
 
 
                       <h2
                         className="
-                          text-2xl
+                          text-xl sm:text-2xl break-words
                           font-bold
                         "
                       >
@@ -190,7 +190,7 @@ export default async function EventsAdminPage(){
 
                   <div
                     className="
-                      flex
+                      flex flex-wrap
                       gap-3
                     "
                   >
@@ -204,7 +204,7 @@ export default async function EventsAdminPage(){
                       className="
                         bg-neutral-700
                         hover:bg-neutral-600
-                        px-5
+                        px-4 sm:px-5
                         py-3
                         rounded-lg
                         font-bold
@@ -221,7 +221,7 @@ export default async function EventsAdminPage(){
                       className="
                         bg-red-600
                         hover:bg-red-700
-                        px-5
+                        px-4 sm:px-5
                         py-3
                         rounded-lg
                         font-bold

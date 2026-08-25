@@ -76,6 +76,11 @@ export default async function EventAdminPage({
       })
       .limit(8);
 
+  const [{count:photographerCount},{count:packageCount}]=await Promise.all([
+    supabaseAdmin.from("event_photographers").select("*",{count:"exact",head:true}).eq("event_id",id),
+    supabaseAdmin.from("event_pricing_packages").select("*",{count:"exact",head:true}).eq("event_id",id).eq("active",true),
+  ]);
+
 
 
   const revenue =
@@ -100,7 +105,7 @@ export default async function EventAdminPage({
         className="
         max-w-6xl
         mx-auto
-        px-6
+        px-4 sm:px-6
         "
       >
 
@@ -130,13 +135,13 @@ export default async function EventAdminPage({
 
 
 
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
 
 
             <div
               className="
               flex
-              justify-between
+              flex-col sm:flex-row justify-between
               gap-5
               items-start
               "
@@ -149,7 +154,7 @@ export default async function EventAdminPage({
 
                 <h1
                   className="
-                  text-4xl
+                  text-3xl sm:text-4xl break-words
                   font-bold
                   "
                 >
@@ -250,6 +255,8 @@ export default async function EventAdminPage({
 
 
         </section>
+
+        <section className="mb-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Checklist de publicação</h2><p className="text-sm text-neutral-400">Confira os itens essenciais antes de divulgar o álbum.</p></div><span className="rounded-full bg-black px-3 py-1 text-sm">{[Boolean(event.cover_image),Boolean(totalPhotos),Boolean(photographerCount),Boolean(event.share_message),Boolean(packageCount||event.base_price)].filter(Boolean).length}/5 prontos</span></div><div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">{[["Capa",Boolean(event.cover_image)],["Fotos",Boolean(totalPhotos)],["Fotógrafo",Boolean(photographerCount)],["WhatsApp",Boolean(event.share_message)],["Preço",Boolean(packageCount||event.base_price)]].map(([label,ready])=><div key={String(label)} className={`rounded-lg border p-3 text-sm font-bold ${ready?"border-green-900 bg-green-950/30 text-green-300":"border-amber-900 bg-amber-950/30 text-amber-300"}`}>{ready?"✓":"!"} {label}</div>)}</div></section>
 
 
 
