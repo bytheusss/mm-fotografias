@@ -1,10 +1,14 @@
 import type { NavLink } from "@/types";
 
 export const NAV_LINKS: NavLink[] = [
-  { label: "Home", href: "/" },
+  { label: "Início", href: "/" },
   { label: "Eventos", href: "/eventos" },
-  { label: "Contrate a M&M", href: "/servicos" },
-  { label: "Quem somos", href: "/fotografos" },
+  { label: "Serviços", href: "/servicos" },
+  { label: "Portfólio", href: "/portfolio" },
+  { label: "Equipe", href: "/fotografos" },
+];
+
+export const MORE_NAV_LINKS: NavLink[] = [
   { label: "Encontre suas Fotos", href: "/#busca" },
   { label: "Sobre", href: "/#sobre" },
   { label: "Contato", href: "/#contato" },
@@ -16,6 +20,7 @@ export const FOOTER_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Eventos", href: "/eventos" },
   { label: "Ensaios e coberturas", href: "/servicos" },
+  { label: "Portfólio", href: "/portfolio" },
   { label: "Quem somos", href: "/fotografos" },
   { label: "Encontre suas Fotos", href: "/#busca" },
   { label: "Sobre", href: "/#sobre" },

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-import { NAV_LINKS } from "@/lib/constants/navigation";
+import { MORE_NAV_LINKS, NAV_LINKS } from "@/lib/constants/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
@@ -173,6 +173,13 @@ export function Navbar() {
 
           ))}
 
+          <li className="group relative">
+            <button type="button" className="flex items-center gap-1 py-3 text-sm text-muted transition-colors hover:text-foreground">Mais <span aria-hidden="true">⌄</span></button>
+            <div className="invisible absolute left-1/2 top-full z-10 w-56 -translate-x-1/2 rounded-xl border border-border bg-background/95 p-2 opacity-0 shadow-2xl backdrop-blur transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              {MORE_NAV_LINKS.map(link => <Link key={link.href} href={link.href} className="block rounded-lg px-4 py-3 text-sm text-muted hover:bg-card hover:text-foreground">{link.label}</Link>)}
+            </div>
+          </li>
+
         </ul>
 
 
@@ -198,11 +205,6 @@ export function Navbar() {
           >
             Cadastrar
           </Button>}
-
-          <Button href="/favoritos" variant="ghost" size="sm">Favoritos</Button>
-
-
-
 
           <Button
             href="/carrinho"
@@ -280,6 +282,9 @@ export function Navbar() {
               </Link>
 
             ))}
+
+            <p className="px-3 pb-1 pt-4 text-xs font-bold uppercase tracking-widest text-neutral-600">Mais opções</p>
+            {MORE_NAV_LINKS.map(link => <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="rounded-sm px-3 py-3 text-sm text-muted hover:bg-card">{link.label}</Link>)}
 
 
 
