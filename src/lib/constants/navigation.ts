@@ -4,7 +4,6 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Início", href: "/" },
   { label: "Eventos", href: "/eventos" },
   { label: "Serviços", href: "/servicos" },
-  { label: "Portfólio", href: "/portfolio" },
   { label: "Equipe", href: "/fotografos" },
 ];
 
@@ -20,7 +19,6 @@ export const FOOTER_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "Eventos", href: "/eventos" },
   { label: "Ensaios e coberturas", href: "/servicos" },
-  { label: "Portfólio", href: "/portfolio" },
   { label: "Quem somos", href: "/fotografos" },
   { label: "Encontre suas Fotos", href: "/#busca" },
   { label: "Sobre", href: "/#sobre" },
