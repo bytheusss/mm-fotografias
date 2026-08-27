@@ -1,12 +1,13 @@
 "use client";
 import { useState } from "react";
 
-export function ServiceRequestForm({ service, packageSlug }: { service: string; packageSlug?: string }) {
+export function ServiceRequestForm({ service, packageSlug, packages=[] }: { service: string; packageSlug?: string; packages?: Array<{slug:string;name:string}> }) {
   const [sending,setSending]=useState(false),[message,setMessage]=useState("");
   async function submit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();setSending(true);setMessage("");const form=new FormData(event.currentTarget);const body=Object.fromEntries(form.entries());const response=await fetch("/api/services/requests",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...body,serviceSlug:service,packageSlug:packageSlug||body.packageSlug})});const data=await response.json().catch(()=>({}));setSending(false);if(response.ok){setMessage(`Pedido recebido! Protocolo ${data.protocol}. Vamos chamar você no WhatsApp.`);event.currentTarget.reset()}else setMessage(data.error||"Não foi possível enviar agora.")}
   return <form onSubmit={submit} className="grid gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 p-5 sm:grid-cols-2 sm:p-7">
     <div className="sm:col-span-2"><p className="text-sm font-bold uppercase tracking-widest text-red-500">Solicitar orçamento</p><h2 className="mt-2 text-3xl font-black">Conte o que você está planejando</h2><p className="mt-2 text-neutral-400">Sem compromisso. Respondemos pelo WhatsApp com disponibilidade e próximos passos.</p></div>
-    {!packageSlug&&<select name="packageSlug" defaultValue="" className="rounded-xl border border-neutral-700 bg-black p-4 text-white"><option value="">Pacote a definir</option><option value="essencial">Essencial</option><option value="elegance">Elegance</option><option value="lux">Lux</option></select>}
+    {packageSlug?<input type="hidden" name="packageSlug" value={packageSlug}/>:<select name="packageSlug" defaultValue="" className="rounded-xl border border-neutral-700 bg-black p-4 text-white"><option value="">Pacote a definir</option>{packages.map(item=><option key={item.slug} value={item.slug}>{item.name}</option>)}</select>}
+    {packageSlug&&<p className="rounded-xl border border-red-900 bg-red-950/30 p-4 font-bold sm:col-span-2">Pacote selecionado: {packages.find(item=>item.slug===packageSlug)?.name||packageSlug}</p>}
     <input required name="clientName" placeholder="Seu nome" className="rounded-xl border border-neutral-700 bg-black p-4"/>
     <input required type="email" name="email" placeholder="Seu e-mail" className="rounded-xl border border-neutral-700 bg-black p-4"/>
     <input required name="whatsapp" inputMode="tel" placeholder="WhatsApp com DDD" className="rounded-xl border border-neutral-700 bg-black p-4"/>
