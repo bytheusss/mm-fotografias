@@ -20,5 +20,5 @@ export async function POST(request: Request) {
     const notice={title:"Novo pedido de orçamento 📷",body:`${name} quer ${service.name}${body.packageSlug?` · pacote ${body.packageSlug}`:""}.`,href:"/admin/studio"};
     await Promise.all((team||[]).map(async person=>{await supabaseAdmin.from("team_notifications").insert({user_id:person.id,...notice});await sendPush(person.id,notice).catch(()=>undefined)}));
     return NextResponse.json({success:true,protocol:data.protocol});
-  } catch(error){console.error("SERVICE REQUEST ERROR",error);return NextResponse.json({error:"Não foi possível registrar. Confirme se a atualização V20 do banco foi aplicada."},{status:500})}
+  } catch(error){console.error("SERVICE REQUEST ERROR",error);return NextResponse.json({error:"Não foi possível registrar o orçamento agora. Tente novamente em instantes."},{status:500})}
 }
