@@ -7,7 +7,7 @@ const manageable = ["client", "photographer", "support", "admin", "owner"];
 
 export async function GET() {
   if (!(await isOwner())) return NextResponse.json({ error: "Somente o proprietário pode gerenciar cargos." }, { status: 403 });
-  const { data, error } = await supabaseAdmin.from("profiles").select("id,email,full_name,role,roles,commission_rate,bio,instagram_handle,avatar_url,public_profile,created_at").order("created_at");
+  const { data, error } = await supabaseAdmin.from("profiles").select("id,email,full_name,role,roles,commission_rate,bio,instagram_handle,avatar_url,phone,public_whatsapp,public_profile,created_at").order("created_at");
   const members = (data || []).filter(profile => [profile.role, ...(profile.roles || [])].some((role: string) => ["owner", "admin", "support", "photographer"].includes(role)));
   return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json({ members });
 }
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     instagram_handle: String(body.instagramHandle || "").replace(/^@/, "").slice(0, 80) || null,
     avatar_url: String(body.avatarUrl || "").slice(0, 500) || null,
     public_profile: Boolean(body.publicProfile),
+    phone: String(body.whatsapp || "").replace(/\D/g, "").slice(0, 15) || null,
+    public_whatsapp: String(body.whatsapp || "").replace(/\D/g, "").slice(0, 15) || null,
   } : { public_profile: false };
   const { error } = await supabaseAdmin.from("profiles").update({ role, roles, commission_rate: photographer ? commission : 0, ...professional }).eq("id", profile.id);
   if (!error) await auditAdmin("role_change", "profile", profile.id, { roles, email, commission });

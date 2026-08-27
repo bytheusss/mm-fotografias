@@ -1,21 +1,22 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-type Member = { id:string; email:string; full_name?:string; role:string; roles?:string[]; commission_rate:number; bio?:string; instagram_handle?:string; avatar_url?:string; public_profile?:boolean };
+type Member = { id:string; email:string; full_name?:string; role:string; roles?:string[]; commission_rate:number; bio?:string; instagram_handle?:string; avatar_url?:string; public_profile?:boolean; phone?:string; public_whatsapp?:string };
 const options = [["owner","Proprietário"],["admin","Administrador"],["support","Atendimento"],["photographer","Fotógrafo"]] as const;
-const initialForm = { email:"", roles:["admin"] as string[], commissionRate:"0", bio:"", instagramHandle:"", avatarUrl:"", publicProfile:false };
+const initialForm = { email:"", roles:["admin"] as string[], commissionRate:"0", bio:"", instagramHandle:"", avatarUrl:"", whatsapp:"", publicProfile:false };
 export default function TeamManager() {
   const [members,setMembers]=useState<Member[]>([]); const [form,setForm]=useState(initialForm); const [message,setMessage]=useState("");
   async function load(){ const response=await fetch("/api/admin/team"); const data=await response.json(); setMembers(data.members||[]); if(!response.ok)setMessage(data.error); }
   useEffect(()=>{const timer=setTimeout(()=>void load(),0);return()=>clearTimeout(timer)},[]);
   function toggle(role:string){setForm(current=>({...current,roles:current.roles.includes(role)?current.roles.filter(item=>item!==role):[...current.roles,role]}));}
   async function save(event:React.FormEvent){event.preventDefault();const response=await fetch("/api/admin/team",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const data=await response.json();setMessage(response.ok?"Cargos e perfil atualizados.":data.error||"Erro.");if(response.ok){setForm(initialForm);await load();}}
-  function edit(member:Member){const roles=[...new Set([member.role,...(member.roles||[])])].filter(role=>role!=="client");setForm({email:member.email,roles,commissionRate:String(member.commission_rate||0),bio:member.bio||"",instagramHandle:member.instagram_handle||"",avatarUrl:member.avatar_url||"",publicProfile:Boolean(member.public_profile)});scrollTo({top:0,behavior:"smooth"});}
+  function edit(member:Member){const roles=[...new Set([member.role,...(member.roles||[])])].filter(role=>role!=="client");setForm({email:member.email,roles,commissionRate:String(member.commission_rate||0),bio:member.bio||"",instagramHandle:member.instagram_handle||"",avatarUrl:member.avatar_url||"",whatsapp:member.public_whatsapp||member.phone||"",publicProfile:Boolean(member.public_profile)});scrollTo({top:0,behavior:"smooth"});}
   const photographer=form.roles.includes("photographer");
   return <div className="space-y-7">
     <form onSubmit={save} className="grid gap-4 rounded-xl border border-neutral-800 bg-neutral-900 p-5 md:grid-cols-2">
       <input required type="email" placeholder="E-mail da conta" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} className="rounded bg-black p-3"/>
       <fieldset className="flex flex-wrap items-center gap-4 rounded bg-black p-3"><legend className="sr-only">Cargos</legend>{options.map(([value,label])=><label key={value} className="flex items-center gap-2"><input type="checkbox" checked={form.roles.includes(value)} onChange={()=>toggle(value)}/>{label}</label>)}</fieldset>
+      <input value={form.whatsapp} onChange={e=>setForm({...form,whatsapp:e.target.value})} className="rounded bg-black p-3" inputMode="tel" placeholder="WhatsApp com DDD"/>
       {photographer&&<><input type="number" min="0" max="100" step=".01" value={form.commissionRate} onChange={e=>setForm({...form,commissionRate:e.target.value})} className="rounded bg-black p-3" placeholder="Comissão %"/><input value={form.instagramHandle} onChange={e=>setForm({...form,instagramHandle:e.target.value})} className="rounded bg-black p-3" placeholder="Instagram (sem @)"/><input value={form.avatarUrl} onChange={e=>setForm({...form,avatarUrl:e.target.value})} className="rounded bg-black p-3 md:col-span-2" placeholder="URL da foto de perfil"/><textarea value={form.bio} maxLength={500} onChange={e=>setForm({...form,bio:e.target.value})} className="min-h-24 rounded bg-black p-3 md:col-span-2" placeholder="Biografia pública"/><label className="flex items-center gap-3"><input type="checkbox" checked={form.publicProfile} onChange={e=>setForm({...form,publicProfile:e.target.checked})}/>Publicar em Quem somos</label></>}
       <button className="rounded bg-red-600 px-5 py-3 font-bold md:col-span-2">Salvar cadastro</button>{message&&<p className="text-sm md:col-span-2">{message}</p>}
     </form>
