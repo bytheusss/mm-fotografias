@@ -38,8 +38,13 @@ export default function UploadPage() {
         if (signedResponse.status === 409) { skipped += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`); continue; }
         if (!signedResponse.ok) throw new Error(signed.error || "erro ao preparar");
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
-        const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
-        if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
+        if (signed.provider === "b2") {
+          const upload = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+          if (!upload.ok) throw new Error(`${file.name}: falha no envio ao armazenamento (${upload.status})`);
+        } else {
+          const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
+          if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
+        }
         setMessage(`${sent} de ${files.length} · processando ${file.name}`);
         const response = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: signed.path, checksum, photographerId: photographerId || null, category }), signal: AbortSignal.timeout(90000) });
         const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || "erro ao processar");

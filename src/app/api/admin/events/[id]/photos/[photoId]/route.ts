@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateImageVersions } from "@/lib/supabase/upload/image-processing";
+import { deleteOriginal, readOriginal } from "@/lib/original-storage";
 
 export const maxDuration = 60;
 
@@ -8,12 +9,12 @@ export async function PATCH(_: Request, { params }: { params: Promise<{ id: stri
   const { id, photoId } = await params;
   const { data: photo } = await supabaseAdmin.from("photos").select("id,event_id,number,original_path,preview_path,thumbnail_path").eq("id", photoId).eq("event_id", id).maybeSingle();
   if (!photo) return NextResponse.json({ error: "Foto não encontrada." }, { status: 404 });
-  const originalPath = String(photo.original_path).replace(/^originals\//, "");
-  const { data: original, error: downloadError } = await supabaseAdmin.storage.from("originals").download(originalPath);
-  if (downloadError || !original) return NextResponse.json({ error: "Original não encontrado." }, { status: 404 });
+  let original: Buffer;
+  try { original = await readOriginal(String(photo.original_path)); }
+  catch { return NextResponse.json({ error: "Original não encontrado." }, { status: 404 }); }
   try {
     const padded = String(photo.number).padStart(4, "0");
-    const versions = await generateImageVersions(Buffer.from(await original.arrayBuffer()), `#${padded}`);
+    const versions = await generateImageVersions(original, `#${padded}`);
     const previewPath = String(photo.preview_path).replace(/^previews\//, "");
     const thumbnailPath = String(photo.thumbnail_path).replace(/^thumbnails\//, "");
     const [preview, thumbnail] = await Promise.all([
@@ -77,14 +78,11 @@ export async function DELETE(
 
   // remove arquivos do storage
 
-  await supabaseAdmin
-    .storage
-    .from("photos")
-    .remove([
-      photo.original_path,
-      photo.preview_path,
-      photo.thumbnail_path
-    ]);
+  await Promise.all([
+    deleteOriginal(String(photo.original_path)).catch(() => undefined),
+    supabaseAdmin.storage.from("previews").remove([String(photo.preview_path).replace(/^previews\//, "")]),
+    supabaseAdmin.storage.from("thumbnails").remove([String(photo.thumbnail_path).replace(/^thumbnails\//, "")]),
+  ]);
 
 
 

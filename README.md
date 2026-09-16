@@ -25,6 +25,18 @@ from auth.users u where p.id = u.id and lower(u.email) = lower('SEU_EMAIL');
 
 No Mercado Pago, mantenha `/api/webhooks/mercadopago` e configure a assinatura em `MERCADO_PAGO_WEBHOOK_SECRET`.
 
+## Originais no Backblaze B2
+
+O projeto aceita Backblaze B2 para armazenar os originais privados, mantendo banco, autenticação, prévias e miniaturas no Supabase. Configure no Vercel:
+
+- `B2_ENDPOINT`: endpoint S3 exibido pelo Backblaze (incluindo `https://`)
+- `B2_REGION`: região do bucket, por exemplo `us-west-004`
+- `B2_KEY_ID`: Key ID da Application Key
+- `B2_APPLICATION_KEY`: Application Key secreta
+- `B2_BUCKET`: nome do bucket privado
+
+Crie a Application Key com acesso somente ao bucket de originais. O bucket precisa permitir `PUT` do domínio de produção e dos domínios de preview usados nos uploads diretos. Sem essas variáveis, o sistema continua usando o bucket `originals` do Supabase, o que permite uma migração gradual sem quebrar fotos antigas.
+
 ## Verificação
 
 ```bash

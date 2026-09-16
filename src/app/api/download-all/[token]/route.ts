@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { orderPhotos, type OrderPhoto } from "@/lib/orders";
 import JSZip from "jszip";
+import { readOriginal } from "@/lib/original-storage";
 
 function originalPath(photo: OrderPhoto) {
   const explicit = String(photo.original_path || "").replace(/^originals\//, "");
@@ -19,10 +20,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   if (order.download_revoked_at) return NextResponse.json({ error: "Acesso aos downloads revogado." }, { status: 403 });
   if (order.download_limit && Number(order.download_count || 0) >= Number(order.download_limit)) return NextResponse.json({ error: "Limite de downloads atingido. Fale com a M&M para renovar o acesso." }, { status: 429 });
   const photos = orderPhotos(order.photos); const zip = new JSZip(); let included = 0;
+  const ids = photos.map(photo => photo.id).filter((id): id is string => Boolean(id));
+  const { data: storedPhotos } = ids.length ? await supabaseAdmin.from("photos").select("id,original_path").in("id", ids) : { data: [] };
+  const storedPaths = new Map((storedPhotos || []).map(photo => [photo.id, photo.original_path]));
   for (const [index, photo] of photos.entries()) {
-    const path = originalPath(photo); if (!path) continue;
-    const { data } = await supabaseAdmin.storage.from("originals").download(path); if (!data) continue;
-    const number = String(photo.numero || index + 1).padStart(4, "0"); zip.file(`${number}.jpg`, await data.arrayBuffer()); included += 1;
+    const path = (photo.id && storedPaths.get(photo.id)) || originalPath(photo); if (!path) continue;
+    let data: Buffer; try { data = await readOriginal(path); } catch { continue; }
+    const number = String(photo.numero || index + 1).padStart(4, "0"); zip.file(`${number}.jpg`, data); included += 1;
   }
   if (!included) return NextResponse.json({ error: "Nenhum original disponível" }, { status: 404 });
   const content = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 6 } });

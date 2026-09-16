@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { readOriginal } from "@/lib/original-storage";
 
 export async function GET(
   request: Request,
@@ -39,7 +40,7 @@ export async function GET(
   if (order.download_revoked_at) return NextResponse.json({ error: "Acesso aos downloads revogado." }, { status: 403 });
   if (order.download_limit && Number(order.download_count || 0) >= Number(order.download_limit)) return NextResponse.json({ error: "Limite de downloads atingido. Fale com a M&M para renovar o acesso." }, { status: 429 });
 
-  let photos: Array<{ numero?: string | number; imagem?: string }> = [];
+  let photos: Array<{ id?: string; numero?: string | number; imagem?: string; original_path?: string }> = [];
   try { photos = typeof order.photos === "string" ? JSON.parse(order.photos) : order.photos; } catch { photos = []; }
 
   const selectedPhoto =
@@ -54,11 +55,10 @@ export async function GET(
     );
   }
 
-  const filePath =
-    selectedPhoto.imagem
-      ?.split("?")[0]
-      .split("/thumbnails/")
-      .pop();
+  const { data: storedPhoto } = selectedPhoto.id
+    ? await supabaseAdmin.from("photos").select("original_path").eq("id", selectedPhoto.id).maybeSingle()
+    : { data: null };
+  const filePath = storedPhoto?.original_path || selectedPhoto.original_path || selectedPhoto.imagem?.split("?")[0].split("/thumbnails/").pop();
 
   if (!filePath) {
     return NextResponse.json(
@@ -67,30 +67,15 @@ export async function GET(
     );
   }
 
-  const { data, error: urlError } =
-    await supabaseAdmin
-      .storage
-      .from("originals")
-      .createSignedUrl(filePath, 60);
-
-  if (urlError || !data?.signedUrl) {
-    return NextResponse.json(
-      { error: "Arquivo original não encontrado" },
-      { status: 404 }
-    );
-  }
-
-  const imageResponse =
-    await fetch(data.signedUrl);
-
-  const blob =
-    await imageResponse.blob();
+  let original: Buffer;
+  try { original = await readOriginal(filePath); }
+  catch { return NextResponse.json({ error: "Arquivo original não encontrado" }, { status: 404 }); }
   await supabaseAdmin.from("orders").update({ download_count: Number(order.download_count || 0) + 1 }).eq("id", order.id);
   await supabaseAdmin.from("download_access_logs").insert({ order_id: order.id, kind: "individual", photo_number: String(selectedPhoto.numero) });
 
-  return new NextResponse(blob, {
+  return new NextResponse(new Uint8Array(original), {
     headers: {
-      "Content-Type": imageResponse.headers.get("Content-Type") ?? "image/jpeg",
+      "Content-Type": "image/jpeg",
       "Content-Disposition": `attachment; filename="${selectedPhoto.numero}.jpg"`,
       "Cache-Control": "private, no-store",
       "X-Content-Type-Options": "nosniff",

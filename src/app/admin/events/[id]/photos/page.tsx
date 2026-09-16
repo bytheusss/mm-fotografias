@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { notFound } from "next/navigation";
 import DeletePhotoButton from "@/components/DeletePhotoButton";
+import { createOriginalDownloadUrl } from "@/lib/original-storage";
 
 
 export default async function EventPhotosPage({
@@ -59,9 +60,9 @@ export default async function EventPhotosPage({
   }
 
   const photosWithUrls = await Promise.all((photos || []).map(async photo => {
-    const path = String(photo.original_path || "").replace(/^originals\//, "");
-    const { data } = path ? await supabaseAdmin.storage.from("originals").createSignedUrl(path, 300) : { data: null };
-    return { ...photo, originalSignedUrl: data?.signedUrl || null };
+    let originalSignedUrl: string | null = null;
+    try { if (photo.original_path) originalSignedUrl = await createOriginalDownloadUrl(String(photo.original_path), 300); } catch {}
+    return { ...photo, originalSignedUrl };
   }));
 
 

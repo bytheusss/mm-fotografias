@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateImageVersions } from "@/lib/supabase/upload/image-processing";
+import { deleteOriginal, writeOriginal } from "@/lib/original-storage";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
@@ -20,14 +21,14 @@ export async function POST(request: Request) {
       if (!file.type.startsWith("image/") || file.size > MAX_FILE_SIZE) throw new Error(`${file.name}: formato inválido ou arquivo maior que 25 MB`);
       const number = nextNumber++; const padded = String(number).padStart(4, "0"); const filename = `${padded}.jpg`; const storagePath = `${event.slug}/${filename}`;
       const versions = await generateImageVersions(Buffer.from(await file.arrayBuffer()));
-      const uploads = await Promise.all([
-        supabaseAdmin.storage.from("originals").upload(storagePath, versions.original, { contentType: "image/jpeg", upsert: false }),
+      const [originalReference, ...uploads] = await Promise.all([
+        writeOriginal(storagePath, versions.original),
         supabaseAdmin.storage.from("previews").upload(storagePath, versions.preview, { contentType: "image/jpeg", upsert: false }),
         supabaseAdmin.storage.from("thumbnails").upload(storagePath, versions.thumbnail, { contentType: "image/jpeg", upsert: false }),
       ]);
       const storageError = uploads.find(result => result.error)?.error; if (storageError) throw storageError;
-      const { error } = await supabaseAdmin.from("photos").insert({ event_id: eventId, number, title: `Foto ${padded}`, slug: `${event.slug}-${padded}`, original_path: `originals/${storagePath}`, preview_path: `previews/${storagePath}`, thumbnail_path: `thumbnails/${storagePath}`, price: 15, status: "available", featured: false });
-      if (error) { await Promise.all(["originals", "previews", "thumbnails"].map(bucket => supabaseAdmin.storage.from(bucket).remove([storagePath]))); throw error; }
+      const { error } = await supabaseAdmin.from("photos").insert({ event_id: eventId, number, title: `Foto ${padded}`, slug: `${event.slug}-${padded}`, original_path: originalReference, preview_path: `previews/${storagePath}`, thumbnail_path: `thumbnails/${storagePath}`, price: 15, status: "available", featured: false });
+      if (error) { await Promise.all([deleteOriginal(originalReference), ...["previews", "thumbnails"].map(bucket => supabaseAdmin.storage.from(bucket).remove([storagePath]))]); throw error; }
       uploaded.push({ number, filename });
     }
     await supabaseAdmin.from("events").update({ total_photos: nextNumber - 1 }).eq("id", eventId);
