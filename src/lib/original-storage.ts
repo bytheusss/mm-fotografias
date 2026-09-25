@@ -94,7 +94,7 @@ export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
         corsRuleName: "allowMMSiteUploads",
         allowedOrigins: origins,
         allowedHeaders: ["*"],
-        allowedOperations: ["S3 Put Object", "S3 Get Object", "S3 Head Object"],
+        allowedOperations: ["S3_put"],
         exposeHeaders: ["ETag", "x-bz-content-sha1"],
         maxAgeSeconds: 3600,
       }],
