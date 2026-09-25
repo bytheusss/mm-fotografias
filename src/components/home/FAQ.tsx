@@ -9,7 +9,7 @@ export function FAQ() {
       <Container>
         <SectionTitle
           title="Perguntas Frequentes"
-          subtitle="Tire suas dúvidas sobre a plataforma"
+          subtitle="Respostas claras para encontrar, comprar e receber suas fotos"
         />
 
         <div className="mx-auto max-w-3xl">
