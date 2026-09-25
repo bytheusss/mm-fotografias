@@ -17,5 +17,5 @@ export const SITE = {
   city: "Rio Claro - SP",
   instagram: "https://instagram.com/mm_fotografias2026",
   instagramHandle: "@mm_fotografias2026",
-  url: "https://mmfotografias.com.br",
+  url: "https://mm-fotografias.vercel.app",
 } as const;
