@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { uploadFileWithRetry } from "@/lib/client/direct-upload";
+import { uploadB2NativeWithRetry, uploadFileWithRetry } from "@/lib/client/direct-upload";
 
 export default function UploadPage() {
 
@@ -33,13 +33,22 @@ export default function UploadPage() {
     for (const file of files) {
       try {
         setMessage(`${sent} de ${files.length} · preparando ${file.name}`);
-        const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer()); const checksum = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
+        const bytes = await file.arrayBuffer();
+        const [sha256, sha1] = await Promise.all([
+          crypto.subtle.digest("SHA-256", bytes),
+          crypto.subtle.digest("SHA-1", bytes),
+        ]);
+        const toHex = (hash: ArrayBuffer) => Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
+        const checksum = toHex(sha256);
+        const contentSha1 = toHex(sha1);
         const signedResponse = await fetch(`/api/admin/events/${eventId}/photos-direct`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ size: file.size, type: file.type, checksum }), signal: AbortSignal.timeout(30000) });
         const signed = await signedResponse.json().catch(() => ({}));
         if (signedResponse.status === 409) { skipped += 1; processed += 1; setProgress(Math.round(processed / files.length * 100)); setMessage(`${sent} enviadas · ${skipped} duplicadas ignoradas`); continue; }
         if (!signedResponse.ok) throw new Error(signed.error || "erro ao preparar");
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
-        if (signed.provider === "b2") {
+        if (signed.provider === "b2-native") {
+          await uploadB2NativeWithRetry(signed, file, contentSha1);
+        } else if (signed.provider === "b2") {
           await uploadFileWithRetry(signed.uploadUrl, file);
         } else {
           const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });

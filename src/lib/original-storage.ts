@@ -10,6 +10,13 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 const B2_PREFIX = "b2/";
 let configuredCors = "";
 
+type B2NativeAuthorization = {
+  accountId: string;
+  authorizationToken: string;
+  apiUrl: string;
+  bucketId: string;
+};
+
 function b2Config() {
   const endpoint = process.env.B2_ENDPOINT?.trim();
   const region = process.env.B2_REGION?.trim();
@@ -56,11 +63,26 @@ export function usesBackblaze() {
   return Boolean(b2Config());
 }
 
-export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
-  const b2 = b2Client();
-  if (!b2) return;
+async function authorizeB2Native(): Promise<B2NativeAuthorization> {
   const config = b2Config();
-  if (!config) return;
+  if (!config) throw new Error("Backblaze B2 ainda não está configurado.");
+  const basic = Buffer.from(`${config.accessKeyId}:${config.secretAccessKey}`).toString("base64");
+  const response = await fetch("https://api.backblazeb2.com/b2api/v4/b2_authorize_account", { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(15_000) });
+  const result = await response.json() as {
+    accountId?: string;
+    authorizationToken?: string;
+    apiInfo?: { storageApi?: { apiUrl?: string; allowed?: { buckets?: Array<{ id?: string; name?: string | null }> } } };
+    message?: string;
+  };
+  if (!response.ok) throw new Error(result.message || "Não foi possível autorizar o Backblaze.");
+  const storageApi = result.apiInfo?.storageApi;
+  const bucketId = storageApi?.allowed?.buckets?.find((bucket) => bucket.name === config.bucket)?.id || storageApi?.allowed?.buckets?.find((bucket) => bucket.id)?.id;
+  if (!result.accountId || !result.authorizationToken || !storageApi?.apiUrl || !bucketId) throw new Error("O Backblaze não retornou os dados necessários do bucket.");
+  return { accountId: result.accountId, authorizationToken: result.authorizationToken, apiUrl: storageApi.apiUrl, bucketId };
+}
+
+export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
+  if (!b2Config()) return;
   const origins = [
     "https://mm-fotografias.vercel.app",
     process.env.NEXT_PUBLIC_SITE_URL,
@@ -72,29 +94,18 @@ export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
   });
   const signature = origins.sort().join("|");
   if (configuredCors === signature) return;
-  const basic = Buffer.from(`${config.accessKeyId}:${config.secretAccessKey}`).toString("base64");
-  const authorizeResponse = await fetch("https://api.backblazeb2.com/b2api/v4/b2_authorize_account", { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(15_000) });
-  const authorization = await authorizeResponse.json() as {
-    accountId?: string;
-    authorizationToken?: string;
-    apiInfo?: { storageApi?: { apiUrl?: string; allowed?: { buckets?: Array<{ id?: string; name?: string | null }> } } };
-    message?: string;
-  };
-  if (!authorizeResponse.ok) throw new Error(authorization.message || "Não foi possível autorizar a configuração do Backblaze.");
-  const storageApi = authorization.apiInfo?.storageApi;
-  const bucketId = storageApi?.allowed?.buckets?.find((bucket) => bucket.name === config.bucket)?.id || storageApi?.allowed?.buckets?.find((bucket) => bucket.id)?.id;
-  if (!authorization.accountId || !authorization.authorizationToken || !storageApi?.apiUrl || !bucketId) throw new Error("O Backblaze não retornou os dados necessários do bucket.");
-  const updateResponse = await fetch(`${storageApi.apiUrl}/b2api/v4/b2_update_bucket`, {
+  const authorization = await authorizeB2Native();
+  const updateResponse = await fetch(`${authorization.apiUrl}/b2api/v4/b2_update_bucket`, {
     method: "POST",
     headers: { Authorization: authorization.authorizationToken, "Content-Type": "application/json" },
     body: JSON.stringify({
       accountId: authorization.accountId,
-      bucketId,
+      bucketId: authorization.bucketId,
       corsRules: [{
         corsRuleName: "allowMMSiteUploads",
         allowedOrigins: origins,
         allowedHeaders: ["*"],
-        allowedOperations: ["S3_put"],
+        allowedOperations: ["b2_upload_file"],
         exposeHeaders: ["ETag", "x-bz-content-sha1"],
         maxAgeSeconds: 3600,
       }],
@@ -109,14 +120,15 @@ export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
 }
 
 export async function createOriginalUploadTarget(key: string, contentType: string) {
-  const b2 = b2Client();
-  if (b2) {
-    const uploadUrl = await getSignedUrl(
-      b2.client,
-      new PutObjectCommand({ Bucket: b2.bucket, Key: key, ContentType: contentType }),
-      { expiresIn: 15 * 60 },
-    );
-    return { provider: "b2" as const, path: `${B2_PREFIX}${key}`, uploadUrl };
+  if (b2Config()) {
+    const authorization = await authorizeB2Native();
+    const response = await fetch(`${authorization.apiUrl}/b2api/v4/b2_get_upload_url?bucketId=${encodeURIComponent(authorization.bucketId)}`, {
+      headers: { Authorization: authorization.authorizationToken },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const upload = await response.json() as { uploadUrl?: string; authorizationToken?: string; message?: string };
+    if (!response.ok || !upload.uploadUrl || !upload.authorizationToken) throw new Error(upload.message || "Não foi possível preparar o envio nativo ao Backblaze.");
+    return { provider: "b2-native" as const, path: `${B2_PREFIX}${key}`, key, uploadUrl: upload.uploadUrl, uploadToken: upload.authorizationToken, contentType };
   }
 
   const { data, error } = await supabaseAdmin.storage.from("originals").createSignedUploadUrl(key);
