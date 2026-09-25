@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  PutBucketCorsCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -8,6 +9,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const B2_PREFIX = "b2/";
+let configuredCors = "";
 
 function b2Config() {
   const endpoint = process.env.B2_ENDPOINT?.trim();
@@ -53,6 +55,35 @@ async function bodyToBuffer(body: unknown): Promise<Buffer> {
 
 export function usesBackblaze() {
   return Boolean(b2Config());
+}
+
+export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
+  const b2 = b2Client();
+  if (!b2) return;
+  const origins = [
+    "https://mm-fotografias.vercel.app",
+    process.env.NEXT_PUBLIC_SITE_URL,
+    requestOrigin,
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : null,
+  ].filter((origin, index, list): origin is string => {
+    if (!origin || !/^https?:\/\//i.test(origin)) return false;
+    return list.indexOf(origin) === index;
+  });
+  const signature = origins.sort().join("|");
+  if (configuredCors === signature) return;
+  await b2.client.send(new PutBucketCorsCommand({
+    Bucket: b2.bucket,
+    CORSConfiguration: {
+      CORSRules: [{
+        AllowedHeaders: ["*"],
+        AllowedMethods: ["GET", "HEAD", "PUT"],
+        AllowedOrigins: origins,
+        ExposeHeaders: ["ETag", "x-bz-content-sha1"],
+        MaxAgeSeconds: 3600,
+      }],
+    },
+  }));
+  configuredCors = signature;
 }
 
 export async function createOriginalUploadTarget(key: string, contentType: string) {

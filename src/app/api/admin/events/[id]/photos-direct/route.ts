@@ -2,20 +2,20 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { generateImageVersions } from "@/lib/supabase/upload/image-processing";
 import { canUploadEvent, getStaffUser } from "@/lib/photographer-auth";
-import { createOriginalUploadTarget, deleteOriginal, readOriginal, writeOriginal } from "@/lib/original-storage";
+import { createOriginalUploadTarget, deleteOriginal, ensureOriginalUploadCors, readOriginal, writeOriginal } from "@/lib/original-storage";
 
 export const maxDuration = 60;
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const body = await request.json(); const size = Number(body.size); const type = String(body.type || ""); const checksum = String(body.checksum || "");
   if (!(await canUploadEvent(id))) return NextResponse.json({ error: "Sem permissão para enviar neste evento." }, { status: 403 });
-  if (!type.startsWith("image/") || !Number.isFinite(size) || size <= 0 || size > MAX_FILE_SIZE) return NextResponse.json({ error: "Use imagens de até 25 MB." }, { status: 400 });
+  if (!type.startsWith("image/") || !Number.isFinite(size) || size <= 0 || size > MAX_FILE_SIZE) return NextResponse.json({ error: "Use imagens de até 50 MB." }, { status: 400 });
   const { data: event } = await supabaseAdmin.from("events").select("slug,base_price").eq("id", id).maybeSingle();
   if (!event) return NextResponse.json({ error: "Evento não encontrado." }, { status: 404 });
   if (checksum) { const { data: duplicate } = await supabaseAdmin.from("photos").select("number").eq("event_id", id).eq("checksum", checksum).maybeSingle(); if (duplicate) return NextResponse.json({ error: `Foto duplicada da #${String(duplicate.number).padStart(4, "0")}.` }, { status: 409 }); }
   const path = `${event.slug}/temp/${crypto.randomUUID()}`;
-  try { return NextResponse.json(await createOriginalUploadTarget(path, type)); }
+  try { await ensureOriginalUploadCors(request.headers.get("origin")); return NextResponse.json(await createOriginalUploadTarget(path, type)); }
   catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Não foi possível preparar o envio." }, { status: 500 }); }
 }
 

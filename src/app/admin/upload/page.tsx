@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadFileWithRetry } from "@/lib/client/direct-upload";
 
 export default function UploadPage() {
 
@@ -39,8 +40,7 @@ export default function UploadPage() {
         if (!signedResponse.ok) throw new Error(signed.error || "erro ao preparar");
         setMessage(`${sent} de ${files.length} · enviando ${file.name}`);
         if (signed.provider === "b2") {
-          const upload = await fetch(signed.uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-          if (!upload.ok) throw new Error(`${file.name}: falha no envio ao armazenamento (${upload.status})`);
+          await uploadFileWithRetry(signed.uploadUrl, file);
         } else {
           const { error: uploadError } = await createClient().storage.from("originals").uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
           if (uploadError) throw new Error(`${file.name}: ${uploadError.message}`);
@@ -157,7 +157,7 @@ export default function UploadPage() {
           </p>
 
           {loading && <div className="mb-5 h-3 overflow-hidden rounded bg-neutral-800"><div className="h-full bg-red-600 transition-all" style={{ width: `${progress}%` }} /></div>}
-          <p className="mb-4 text-sm text-neutral-500">Pode repetir a seleção após uma interrupção: arquivos já enviados serão reconhecidos e ignorados automaticamente.</p>
+          <p className="mb-4 text-sm text-neutral-500">JPG, PNG ou WebP de até 50 MB por foto. Pode repetir a seleção após uma interrupção: arquivos já enviados serão reconhecidos e ignorados automaticamente.</p>
 
 
           <button
