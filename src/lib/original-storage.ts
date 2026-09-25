@@ -1,7 +1,6 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
-  PutBucketCorsCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -60,6 +59,8 @@ export function usesBackblaze() {
 export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
   const b2 = b2Client();
   if (!b2) return;
+  const config = b2Config();
+  if (!config) return;
   const origins = [
     "https://mm-fotografias.vercel.app",
     process.env.NEXT_PUBLIC_SITE_URL,
@@ -71,18 +72,39 @@ export async function ensureOriginalUploadCors(requestOrigin?: string | null) {
   });
   const signature = origins.sort().join("|");
   if (configuredCors === signature) return;
-  await b2.client.send(new PutBucketCorsCommand({
-    Bucket: b2.bucket,
-    CORSConfiguration: {
-      CORSRules: [{
-        AllowedHeaders: ["*"],
-        AllowedMethods: ["GET", "HEAD", "PUT"],
-        AllowedOrigins: origins,
-        ExposeHeaders: ["ETag", "x-bz-content-sha1"],
-        MaxAgeSeconds: 3600,
+  const basic = Buffer.from(`${config.accessKeyId}:${config.secretAccessKey}`).toString("base64");
+  const authorizeResponse = await fetch("https://api.backblazeb2.com/b2api/v4/b2_authorize_account", { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(15_000) });
+  const authorization = await authorizeResponse.json() as {
+    accountId?: string;
+    authorizationToken?: string;
+    apiInfo?: { storageApi?: { apiUrl?: string; allowed?: { buckets?: Array<{ id?: string; name?: string | null }> } } };
+    message?: string;
+  };
+  if (!authorizeResponse.ok) throw new Error(authorization.message || "Não foi possível autorizar a configuração do Backblaze.");
+  const storageApi = authorization.apiInfo?.storageApi;
+  const bucketId = storageApi?.allowed?.buckets?.find((bucket) => bucket.name === config.bucket)?.id || storageApi?.allowed?.buckets?.find((bucket) => bucket.id)?.id;
+  if (!authorization.accountId || !authorization.authorizationToken || !storageApi?.apiUrl || !bucketId) throw new Error("O Backblaze não retornou os dados necessários do bucket.");
+  const updateResponse = await fetch(`${storageApi.apiUrl}/b2api/v4/b2_update_bucket`, {
+    method: "POST",
+    headers: { Authorization: authorization.authorizationToken, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      accountId: authorization.accountId,
+      bucketId,
+      corsRules: [{
+        corsRuleName: "allowMMSiteUploads",
+        allowedOrigins: origins,
+        allowedHeaders: ["*"],
+        allowedOperations: ["S3 Put Object", "S3 Get Object", "S3 Head Object"],
+        exposeHeaders: ["ETag", "x-bz-content-sha1"],
+        maxAgeSeconds: 3600,
       }],
-    },
-  }));
+    }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!updateResponse.ok) {
+    const error = await updateResponse.json().catch(() => ({})) as { message?: string };
+    throw new Error(error.message || `Não foi possível configurar o CORS do Backblaze (${updateResponse.status}).`);
+  }
   configuredCors = signature;
 }
 
