@@ -25,18 +25,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, database: heartbeatError.message }, { status: 503 });
   }
 
+  const fullAudit = new URL(request.url).searchParams.get("full") === "1";
+  const { count: originalCount, error: countError } = await supabaseAdmin
+    .from("photos")
+    .select("id", { count: "exact", head: true })
+    .like("original_path", "b2/%");
+  if (countError) return NextResponse.json({ ok: false, database: countError.message }, { status: 503 });
+  const batchSize = fullAudit ? Math.max(1, originalCount || 1) : 12;
+  const dailyOffset = originalCount ? (Math.floor(now / 86_400_000) * 12) % originalCount : 0;
+  const from = fullAudit ? 0 : dailyOffset;
+  const to = fullAudit ? batchSize - 1 : Math.min(from + batchSize - 1, Math.max(0, (originalCount || 1) - 1));
   const { data: sample, error: sampleError } = await supabaseAdmin
     .from("photos")
     .select("id,original_path")
     .like("original_path", "b2/%")
     .order("id")
-    .limit(8);
+    .range(from, to);
   if (sampleError) return NextResponse.json({ ok: false, database: sampleError.message }, { status: 503 });
 
-  const checks = await Promise.all((sample || []).map(async (photo) => ({
-    id: photo.id,
-    valid: await checkOriginalExists(String(photo.original_path)),
-  })));
+  const checks: Array<{ id: string; valid: boolean }> = [];
+  for (let index = 0; index < (sample || []).length; index += 20) {
+    const group = (sample || []).slice(index, index + 20);
+    checks.push(...await Promise.all(group.map(async (photo) => ({
+      id: photo.id,
+      valid: await checkOriginalExists(String(photo.original_path)),
+    }))));
+  }
   const invalid = checks.filter((check) => !check.valid).map((check) => check.id);
 
   const [errorsCleanup, auditCleanup, notificationCleanup] = await Promise.all([
@@ -52,7 +66,7 @@ export async function GET(request: Request) {
     ok: invalid.length === 0 && maintenanceErrors.length === 0,
     database: "online",
     heartbeatRows: heartbeat?.length || 0,
-    backblaze: { checked: checks.length, invalid },
+    backblaze: { total: originalCount || 0, checked: checks.length, fullAudit, invalid },
     maintenanceErrors,
     checkedAt: new Date().toISOString(),
   }, { status: invalid.length || maintenanceErrors.length ? 503 : 200 });
