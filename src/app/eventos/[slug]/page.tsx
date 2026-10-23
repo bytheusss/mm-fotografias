@@ -15,6 +15,7 @@ import { hasEventAccess } from "@/lib/event-access";
 import type { Metadata } from "next";
 import { SITE } from "@/lib/constants/site";
 import { EventFollowButton } from "@/components/event/EventFollowButton";
+import { Suspense } from "react";
 
 export const revalidate = 300;
 
@@ -70,7 +71,9 @@ export default async function EventoPage({
 
           </div>
 
-          <PhotoSearch photos={photos} />
+          <Suspense fallback={<div className="min-h-96 animate-pulse rounded-xl bg-neutral-900" aria-label="Carregando galeria" />}>
+            <PhotoSearch photos={photos} />
+          </Suspense>
 
         </section>
       </Container>

@@ -4,11 +4,10 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SafeImage } from "@/components/ui/SafeImage";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getAllEvents } from "@/lib/events";
 
 export async function LatestEvents() {
-  const { data } = await supabaseAdmin.from("events").select("id,slug,name,city,event_date,total_photos,cover_image").eq("published", true).eq("archived", false).eq("access_mode", "public").order("event_date", { ascending: false }).limit(6);
-  const events = (data || []).map(event => ({ id: event.id, slug: event.slug, name: event.name, city: event.city, date: new Date(event.event_date).toLocaleDateString("pt-BR"), photoCount: event.total_photos || 0, image: event.cover_image }));
+  const events = (await getAllEvents()).slice(0, 6);
   if (!events.length) return null;
   return (
     <section id="eventos" className="bg-background py-20 md:py-28">

@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { type ImageProps } from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IMAGE_PATHS } from "@/lib/constants/images";
 
 type SafeImageProps = ImageProps & {
@@ -14,19 +14,9 @@ export function SafeImage({
   alt = "",
   ...props
 }: SafeImageProps) {
-  const getValidSrc = () => {
-    if (typeof src === "string" && src.trim() !== "") {
-      return src;
-    }
-
-    return fallbackSrc;
-  };
-
-  const [imgSrc, setImgSrc] = useState(getValidSrc());
-
-  useEffect(() => {
-    setImgSrc(getValidSrc());
-  }, [src, fallbackSrc]);
+  const validSrc = typeof src === "string" && src.trim() === "" ? fallbackSrc : src || fallbackSrc;
+  const [failedSrc, setFailedSrc] = useState<ImageProps["src"] | null>(null);
+  const imgSrc = failedSrc === validSrc ? fallbackSrc : validSrc;
 
   if (!imgSrc) {
     return null;
@@ -37,10 +27,9 @@ export function SafeImage({
       {...props}
       src={imgSrc}
       alt={alt}
-      unoptimized
       onError={() => {
-        if (imgSrc !== fallbackSrc && fallbackSrc) {
-          setImgSrc(fallbackSrc);
+        if (validSrc !== fallbackSrc && fallbackSrc) {
+          setFailedSrc(validSrc);
         }
       }}
     />

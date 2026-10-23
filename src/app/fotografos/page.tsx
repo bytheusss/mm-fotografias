@@ -3,13 +3,15 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { publicRoleLabels } from "@/lib/roles";
 import { ProfileAvatar } from "@/components/team/ProfileAvatar";
+import { unstable_cache } from "next/cache";
 
-export const dynamic = "force-dynamic";
+const getPublicPhotographers = unstable_cache(async () => Promise.all([
+  supabaseAdmin.from("profiles").select("id,full_name,bio,instagram_handle,avatar_url,role,roles").contains("roles", ["photographer"]).eq("public_profile", true).order("full_name"),
+  supabaseAdmin.from("photographer_portfolio_assets").select("id,photographer_id,storage_path,title").eq("published", true).order("sort_order").order("created_at", { ascending: false }),
+]), ["public-photographers"], { revalidate: 300, tags: ["photographers"] });
+
 export default async function PhotographersPage() {
-  const [{ data: people }, { data: portfolio }] = await Promise.all([
-    supabaseAdmin.from("profiles").select("id,full_name,bio,instagram_handle,avatar_url,role,roles").contains("roles", ["photographer"]).eq("public_profile", true).order("full_name"),
-    supabaseAdmin.from("photographer_portfolio_assets").select("id,photographer_id,storage_path,title").eq("published", true).order("sort_order").order("created_at", { ascending: false }),
-  ]);
+  const [{ data: people }, { data: portfolio }] = await getPublicPhotographers();
   const previews = new Map<string, NonNullable<typeof portfolio>>();
   for (const photo of portfolio || []) {
     const current = previews.get(photo.photographer_id) || [];

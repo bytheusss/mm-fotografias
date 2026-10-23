@@ -3,6 +3,13 @@ import { Card } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { unstable_cache } from "next/cache";
+
+const getPublicReviews = unstable_cache(
+  async () => (await supabaseAdmin.from("purchase_reviews").select("id,customer_name,comment,rating,response_text,featured,created_at").eq("target_type", "studio").eq("published", true).order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(12)).data || [],
+  ["public-reviews"],
+  { revalidate: 300, tags: ["reviews"] },
+);
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -34,12 +41,12 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 }
 
 export async function Testimonials() {
-  const { data } = await supabaseAdmin.from("purchase_reviews").select("id,customer_name,comment,rating,response_text,featured,created_at").eq("target_type", "studio").eq("published", true).order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(12);
+  const data = await getPublicReviews();
   const curated = [
     { id: "curated-maique", name: "Maíque", content: "Atendimento excelente e fotos com muita qualidade. Todo o processo foi simples, rápido e bem organizado.", rating: 5, role: "Cliente" },
     { id: "curated-ana-clara", name: "Ana Clara", content: "Amei o resultado das fotos! Um trabalho muito caprichado e uma experiência incrível do começo ao fim.", rating: 5, role: "Cliente" },
   ];
-  const verified = (data || []).map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada",response:item.response_text }));
+  const verified = data.map(item => ({ id: item.id, name: item.customer_name, content: item.comment || "Excelente experiência com a M&M Fotografias.", rating: item.rating, role: "Compra verificada",response:item.response_text }));
   const testimonials = [...verified, ...curated, ...TESTIMONIALS] as Testimonial[];
   const featured = testimonials.slice(0, 3);
   const remaining = testimonials.slice(3);

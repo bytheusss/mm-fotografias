@@ -68,7 +68,7 @@ export function PhotoCard({
       </button>
 
       <SafeImage
-        src={photo.imagem}
+        src={photo.thumbnail || photo.imagem}
         alt={`Foto ${photo.numero} — ${photo.evento}`}
         fill
         priority={priority}
