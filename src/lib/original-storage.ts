@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -174,6 +175,18 @@ export async function createOriginalDownloadUrl(reference: string, expiresIn = 6
   const { data, error } = await supabaseAdmin.storage.from("originals").createSignedUrl(cleanSupabasePath(reference), expiresIn);
   if (error || !data?.signedUrl) throw error || new Error("Original não encontrado.");
   return data.signedUrl;
+}
+
+export async function checkOriginalExists(reference: string) {
+  if (!reference.startsWith(B2_PREFIX)) return false;
+  const b2 = b2Client();
+  if (!b2) return false;
+  try {
+    const response = await b2.client.send(new HeadObjectCommand({ Bucket: b2.bucket, Key: cleanB2Key(reference) }));
+    return Number(response.ContentLength || 0) > 0;
+  } catch {
+    return false;
+  }
 }
 
 export async function deleteOriginal(reference: string) {

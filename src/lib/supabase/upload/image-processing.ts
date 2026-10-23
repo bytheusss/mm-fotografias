@@ -22,15 +22,15 @@ function protectionLayer(width: number, height: number, label = "") {
 export async function generateImageVersions(buffer: Buffer, label = "") {
   const normalized = sharp(buffer).rotate();
   const original = await normalized.clone().jpeg({ quality: 95, mozjpeg: true }).toBuffer();
-  const previewBase = await normalized.clone().resize({ width: 1600, height: 2400, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 84 }).toBuffer();
+  const previewBase = await normalized.clone().resize({ width: 1440, height: 2160, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 78, progressive: true, mozjpeg: true }).toBuffer();
   const previewMetadata = await sharp(previewBase).metadata();
   const width = previewMetadata.width || 1200;
   const height = previewMetadata.height || 1600;
-  const preview = await sharp(previewBase).composite([{ input: protectionLayer(width, height, label), gravity: "centre", blend: "over" }, { input: await watermarkLogo(width), gravity: "centre", blend: "over" }]).jpeg({ quality: 84 }).toBuffer();
-  const thumbnailBase = await normalized.clone().resize({ width: 500, height: 750, fit: "inside", withoutEnlargement: true }).toBuffer();
+  const preview = await sharp(previewBase).composite([{ input: protectionLayer(width, height, label), gravity: "centre", blend: "over" }, { input: await watermarkLogo(width), gravity: "centre", blend: "over" }]).jpeg({ quality: 78, progressive: true, mozjpeg: true }).toBuffer();
+  const thumbnailBase = await normalized.clone().resize({ width: 420, height: 630, fit: "inside", withoutEnlargement: true }).toBuffer();
   const thumbnailMetadata = await sharp(thumbnailBase).metadata();
-  const thumbnailWidth = thumbnailMetadata.width || 500;
-  const thumbnailHeight = thumbnailMetadata.height || 750;
-  const thumbnail = await sharp(thumbnailBase).composite([{ input: protectionLayer(thumbnailWidth, thumbnailHeight, label), gravity: "centre", blend: "over" }, { input: await watermarkLogo(thumbnailWidth), gravity: "centre", blend: "over" }]).jpeg({ quality: 74 }).toBuffer();
+  const thumbnailWidth = thumbnailMetadata.width || 420;
+  const thumbnailHeight = thumbnailMetadata.height || 630;
+  const thumbnail = await sharp(thumbnailBase).composite([{ input: protectionLayer(thumbnailWidth, thumbnailHeight, label), gravity: "centre", blend: "over" }, { input: await watermarkLogo(thumbnailWidth), gravity: "centre", blend: "over" }]).jpeg({ quality: 68, progressive: true, mozjpeg: true }).toBuffer();
   return { original, preview, thumbnail };
 }
