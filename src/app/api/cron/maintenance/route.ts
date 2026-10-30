@@ -53,6 +53,20 @@ export async function GET(request: Request) {
   }
   const invalid = checks.filter((check) => !check.valid).map((check) => check.id);
 
+  const { error: heartbeatWriteError } = await supabaseAdmin.from("admin_audit_logs").insert({
+    admin_user_id: null,
+    action: "supabase_keepalive",
+    entity_type: "system",
+    details: {
+      checkedOriginals: checks.length,
+      invalidOriginals: invalid.length,
+      checkedAt: new Date().toISOString(),
+    },
+  });
+  if (heartbeatWriteError) {
+    return NextResponse.json({ ok: false, database: heartbeatWriteError.message }, { status: 503 });
+  }
+
   const [errorsCleanup, auditCleanup, notificationCleanup] = await Promise.all([
     supabaseAdmin.from("client_error_logs").delete().eq("resolved", true).lt("created_at", ninetyDaysAgo),
     supabaseAdmin.from("admin_audit_logs").delete().lt("created_at", oneYearAgo),
